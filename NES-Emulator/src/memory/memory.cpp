@@ -86,9 +86,9 @@ uint16_t Memory::PPU::getAddr(uint16_t addr) {
 	if(addr >= 0x3F20 && addr <= 0x3FFF) return addr & 0x3F1F; // Memory Mirroring
 	if(addr >= 0x3F10 && addr <= 0x3F1C && addr % 4 == 0) return addr & 0xFF0F; // Palette Mirroring
 
-	if(addr > 0x23FF && addr < 0x3000) { // Nametable Mirroring
-		if(this->nametableMirroringType == NametableMirroringType::HORIZONTAL) return addr & ~0x400;
-		if(this->nametableMirroringType == NametableMirroringType::VERTICAL) return addr & ~800;
+	if(addr >= 0x2400 && addr < 0x3000) { // Nametable Mirroring
+		if(this->nametableMirroringType == NametableMirroringType::HORIZONTAL) return addr & ~0x0400;
+		if(this->nametableMirroringType == NametableMirroringType::VERTICAL) return addr & ~0x0800;
 		if(this->nametableMirroringType == NametableMirroringType::ONE) return addr & 0x23FF;
 	}
 
