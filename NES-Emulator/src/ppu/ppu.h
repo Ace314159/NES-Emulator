@@ -21,21 +21,21 @@ public:
 		uint8_t R, G, B;
 	};
 
-	PPU(Memory::PPU& m);
+	PPU(Memory& m);
 	std::array<Color, 64> paletteTable; // Not part of RAM
 
-	Memory::PPU& mem;
+	Memory& mem;
 
 	// Registers
-	uint8_t& CTRL = mem.registers[0] = 0;
-	uint8_t& MASK = mem.registers[1] = 0;
-	uint8_t& STATUS = mem.registers[2] = 0;
-	uint8_t& OAMADDR = mem.registers[3];
-	uint8_t& OAMDATA = mem.registers[4];
-	uint8_t& SCROLL = mem.registers[5];
-	uint8_t& ADDR = mem.registers[6];
-	uint8_t& DATA = mem.registers[7];
-	uint8_t& OAMDMA = mem.register4014;
+	uint8_t& CTRL = mem.mapper->ppuRegisters[0x2000 - 0x2000];
+	uint8_t& MASK = mem.mapper->ppuRegisters[0x2001 - 0x2000];
+	uint8_t& STATUS = mem.mapper->ppuRegisters[0x2002 - 0x2000];
+	uint8_t& OAMADDR = mem.mapper->ppuRegisters[0x2003 - 0x2000];
+	uint8_t& OAMDATA = mem.mapper->ppuRegisters[0x2004 - 0x2000];
+	uint8_t& SCROLL = mem.mapper->ppuRegisters[0x2005 - 0x2000];
+	uint8_t& ADDR = mem.mapper->ppuRegisters[0x2006 - 0x2000];
+	uint8_t& DATA = mem.mapper->ppuRegisters[0x2007 - 0x2000];
+	uint8_t& OAMDMA = mem.mapper->apuRegisters[0x4014 - 0x4000];
 
 	// Useful variables to determine what to render
 	int scanlineNum = 0;
@@ -75,8 +75,8 @@ public:
 	bool oddFrame = false;
 	bool oldNMI = false;
 	uint8_t OAMDMAStartAddr;
-	uint16_t& registerRead = mem.registerRead;
-	uint16_t& registerWritten = mem.registerWritten;
+	uint16_t& registerRead = mem.ppuRegisterRead;
+	uint16_t& registerWritten = mem.ppuRegisterWritten;
 
 	void emulateCycle(bool afterCPU); // Emulates a single PPU cyle
 

@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <algorithm>
+#include <vector>
 
 using std::cout;
 using std::endl;
@@ -12,7 +13,7 @@ void NES::corruptedROM() {
 	throw std::runtime_error("Corrupted ROM!");
 }
 
-NES::NES(const std::chrono::nanoseconds ct) : CLOCK_TIME(ct) {}
+NES::NES(const std::chrono::nanoseconds ct, std::string romFileName) : CLOCK_TIME(ct), ppu(loadRom(romFileName)) {}
 
 void NES::tick() {
 	//auto endTime = std::chrono::high_resolution_clock::now() + CLOCK_TIME;
@@ -35,8 +36,8 @@ void NES::tick() {
 	}*/
 }
 
-void NES::loadRom(std::string fileName) {
-	std::basic_ifstream<uint8_t> romData(fileName, std::ios::binary);
+Memory& NES::loadRom(std::string romFileName) {
+	std::basic_ifstream<uint8_t> romData(romFileName, std::ios::binary);
 	if(!romData.good()) {
 		throw std::runtime_error("Could not read ROM file");
 	}
@@ -55,24 +56,24 @@ void NES::loadRom(std::string fileName) {
 	const uint8_t chrBlocks = romData.get() & 0xff;
 	// Get mapper id and control bytes
 	uint8_t buffer = romData.get() & 0xff;
-	this->mapper = buffer >> 4; // Lower 4 bits of mapper id
+	uint8_t mapperID = buffer >> 4; // Lower 4 bits of mapper id
 	bool fourScreenVRAM = buffer & (1 << 3);
 	bool trainerExists = buffer & (1 << 2);
 	this->sRAMUsed = buffer & (1 << 1);
 	bool isVerticalMirroring = buffer & (1 << 0);
 	if(fourScreenVRAM) {
-		this->ppu.mem.nametableMirroringType = Memory::PPU::NametableMirroringType::FOUR;
+		this->mem.nametableMirroringType = Memory::NametableMirroringType::FOUR;
 	} else {
-		if(isVerticalMirroring) 
-			this->ppu.mem.nametableMirroringType = Memory::PPU::NametableMirroringType::VERTICAL;
-		else this->ppu.mem.nametableMirroringType = Memory::PPU::NametableMirroringType::HORIZONTAL;
+		if(isVerticalMirroring)
+			this->mem.nametableMirroringType = Memory::NametableMirroringType::VERTICAL;
+		else this->mem.nametableMirroringType = Memory::NametableMirroringType::HORIZONTAL;
 	}
 	// Get upper 4 bytes of mapper id
 	buffer = romData.get() & 0xff;
 	if((buffer & 0xff) != 0) { // Check if lower 4 bits of control byte 2 are 0s
 		this->corruptedROM();
 	}
-	mapper |= buffer;
+	mapperID |= buffer;
 	// Get size of PRG RAM - in 8k blocks,  0 means 1 8k
 	const uint8_t prgRamBlocks = std::max(1, static_cast<int>(romData.get()));
 	// Check if last 7 bytes are 0s
@@ -81,33 +82,23 @@ void NES::loadRom(std::string fileName) {
 	if(buffer != 0) {
 		this->corruptedROM();
 	}
-
-	// Use mapper to load ROM into memory
-	if(mapper != 0) {
-		throw std::runtime_error("Mapper " + std::to_string(mapper) + " not supported!");
-	}
-
 	romData.seekg(512 * trainerExists, std::ios::cur);
 
-	cout << prgBlocks << endl;
-	romData.read(&this->cpu.mem.arr[0x8000], prgBlocks * 0x4000); // PRG
-	// If there is just 1 16K PRG Block, then it is mirrored to the next 16K, otherwise the next 16K is filled
-	// with the next part of the ROM
-	if(prgBlocks == 1) {
-		std::copy(this->cpu.mem.arr.begin() + 0x8000, this->cpu.mem.arr.begin() + 0xC000,
-			this->cpu.mem.arr.begin() + 0xC000);
-	}
-
-	// With mapper id 0, there is 1 8K CHR Block, which is loaded into the pattern tables
-	romData.read(&this->ppu.mem.arr[0x0000], 0x2000); // CHR
+	// Use mapper to load into memory
+	std::vector<uint8_t> PRG, CHR;
+	PRG.resize(prgBlocks * 0x4000);
+	CHR.resize(chrBlocks * 0x2000);
+	romData.read(&PRG[0], prgBlocks * 0x4000); // PRG
+	romData.read(&CHR[0], chrBlocks * 0x2000); // CHR
+	this->mem.mapper = BaseMapper::getMapper(mapperID, PRG, CHR, prgRamBlocks);
 
 	// Set the PC to the memory address at the RESET vector location (0xFFFC/D)
-	this->cpu.PC = this->cpu.mem.get8(0xFFFC) | (this->cpu.mem.get8(0xFFFD) << 8);
-	cout << (int)cpu.PC << endl;
+	this->cpu.PC = this->mem.getRAM8(0xFFFC) | (this->mem.getRAM8(0xFFFD) << 8);
+	return mem;
 }
 
 void NES::handleInput() {
-	if((this->cpu.mem.arr[0x4016] & 0x1) == 1) {
+	if((this->cpu.mem.mapper->apuRegisters[0x4016 - 0x4000] & 0x1) == 1) {
 		this->cpu.mem.buttons1[0] = glfwGetKey(Graphics::window, GLFW_KEY_A);
 		this->cpu.mem.buttons1[1] = glfwGetKey(Graphics::window, GLFW_KEY_B);
 		this->cpu.mem.buttons1[2] = glfwGetKey(Graphics::window, GLFW_KEY_E);
@@ -118,7 +109,7 @@ void NES::handleInput() {
 		this->cpu.mem.buttons1[7] = glfwGetKey(Graphics::window, GLFW_KEY_RIGHT);
 		this->cpu.mem.buttons1Index = 0;
 	}
-	if((this->cpu.mem.arr[0x4017] & 0x1) == 1) {
+	if((this->cpu.mem.mapper->apuRegisters[0x4017 - 0x4000] & 0x1) == 1) {
 		this->cpu.mem.buttons2[0] = 0;
 		this->cpu.mem.buttons2[1] = 0;
 		this->cpu.mem.buttons2[2] = 0;

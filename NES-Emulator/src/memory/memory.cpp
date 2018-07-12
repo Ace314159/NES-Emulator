@@ -5,84 +5,80 @@
 using std::cout;
 using std::endl;
 
-Memory::Memory(uint16_t& cu, int& scan, int& cyc) : ppuMem(this->cpuMem, cu, scan), cpuMem(ppuMem, cyc) { }
+Memory::Memory(uint16_t& cu, int& scan, int& cyc) : currentVramAddr(cu), scanlineNum(scan), cycleNum(cyc) { }
 
 // CPU
-Memory::CPU::CPU(Memory::PPU& p, int& cyc) : ppuMem(p), cycleNum(cyc) {}
 
-uint16_t Memory::CPU::getAddr(uint16_t addr) {
-	if(addr > 0x7FFF && addr < 0x2000) return addr & 0x07FF; // Memory Mirroring
-	if(addr > 0x1FFF && addr < 0x4000) return addr & 0xE007; // PPU Register Mirroring
-	return addr;
+uint8_t& Memory::getRAMLoc(uint16_t& addr) {
+	// Memory Mirroring
+	if(addr >= 0x0800 && addr < 0x2000) addr &= 0x07FF; // RAM Mirroring
+	if(addr > 0x2007 && addr < 0x4000) addr &= 0xE007; // PPU Register Mirroring
+	
+	if(addr < 0x0800) return this->mapper->internalRAM[addr];
+	if(addr >= 0x2000 && addr <= 0x2007) return this->mapper->ppuRegisters[addr - 0x2000];
+	if(addr >= 0x4000 && addr <= 0x4017) return this->mapper->apuRegisters[addr - 0x4000];
+	return this->mapper->getRAM8(addr);
 }
 
-uint8_t Memory::CPU::get8(uint16_t addr) {
+uint8_t Memory::getRAM8(uint16_t addr) {
 	/*if(this->DMACalled) {
 		this->inDMA = true;
 		this->DMACalled = false;
 		throw "DMA";
 	}*/
-	addr = getAddr(addr);
+	uint8_t& ramLoc = this->getRAMLoc(addr);
 	if(addr >= 0x2000 && addr <= 0x2007) {
-		addr &= 0xE007;
 		if(addr == 0x2000 || addr == 0x2001 || addr == 0x2003 || addr == 0x2005 || addr == 0x2006) {
-			return this->ppuMem.cpuBus; // PPU Write Only Registers
+			return this->cpuPpuBus; // PPU Write Only Registers
 		} else if(addr == 0x2002) {
-			this->ppuMem.registerRead = 0x2002;
-			return arr[0x2002] = (arr[0x2002] & ~0x1F) | (this->ppuMem.cpuBus & 0x1F);
+			this->ppuRegisterRead = 0x2002;
+			return ramLoc = (ramLoc & ~0x1F) | (this->cpuPpuBus & 0x1F);;
 		} else if(addr == 0x2007) {
-			this->ppuMem.registerRead = 0x2007;
-			if(this->ppuMem.currentVramAddr <= 0x3EFF) return this->ppuMem.DATAReadBuffer;
+			this->ppuRegisterRead = 0x2007;
+			if(this->currentVramAddr <= 0x3EFF) return this->ppuDATAReadBuffer;
 			else {
-				this->ppuMem.DATAReadBuffer  = this->ppuMem.get8(this->ppuMem.currentVramAddr & ~0x1000);
-				return this->ppuMem.get8(this->ppuMem.currentVramAddr);
+				this->ppuDATAReadBuffer  = this->getVRAM8(this->currentVramAddr & ~0x1000);
+				return this->getVRAM8(this->currentVramAddr);
 			}
 		}
 		// Has to be 0x2004
 		// this->ppuMem.registerRead = 0x2004; - Nothing happens anyway
-		return this->ppuMem.OAM[this->arr[0x2003]]; // Gets OAM data at OAMADDR
+		return this->OAM[this->mapper->ppuRegisters[0x2003 - 0x2000]]; // Gets OAM data at OAMADDR
 	}
-	else if(addr == 0x4014) return this->ppuMem.cpuBus; // PPU Write Only Register
+	else if(addr == 0x4014) return this->cpuPpuBus; // PPU Write Only Register
 	else if(addr == 0x4016) return buttons1[buttons1Index++ % 8];
 	else if(addr == 0x4017) return buttons2[buttons2Index++ % 8];
-	return arr[addr];
+	return ramLoc;
 }
 
-void Memory::CPU::set8(uint16_t addr, uint8_t data) {
-	addr = getAddr(addr);
+void Memory::setRAM8(uint16_t addr, uint8_t data) {
+	uint8_t& ramLoc = this->getRAMLoc(addr);
 	if(addr < 0x07FF) { // Regular Memory
-		arr[addr] = data;
+		ramLoc = data;
 		return;
 	} else if(addr != 0x2002) { // PPU Write Registers
-		if(addr == 0x2004 && (this->ppuMem.scanlineNum < 240 || this->ppuMem.scanlineNum == 261))
+		if(addr == 0x2004 && (this->scanlineNum < 240 || this->scanlineNum == 261))
 			// || (addr == 0x2000 && this->ppuMem.canWrite)) // Can't write to 0x2000 for first 3000 cycles
 			return; // Ignore writes to OAM Data during rendering
-		arr[addr] = this->ppuMem.cpuBus = data;
+		ramLoc = this->cpuPpuBus = data;
 		// Set low 5 bits of PPUSTATUS
-		arr[0x2002] = (arr[0x2002] & ~(0x1F)) | (this->ppuMem.cpuBus & 0x1F);
+		mapper->ppuRegisters[0x2002 - 0x2000] = (mapper->ppuRegisters[2] & ~(0x1F)) | (this->cpuPpuBus & 0x1F);
 
-		this->ppuMem.registerWritten = addr;
+		this->ppuRegisterWritten = addr;
 	} else if(addr == 0x4014) { // PPU Write Only Register
-		arr[0x4014] = this->ppuMem.cpuBus = data;
+		ramLoc = this->cpuPpuBus = data;
 		// Set low 5 bits of PPUSTATUS
 		//arr[0x2002] = (arr[0x2002] & ~(0x1F)) | (this->ppuMem.cpuBus & 0x1F);
-		this->ppuMem.registerWritten = 0x4014;
+		this->ppuRegisterWritten = 0x4014;
 		return;
 	}
-	arr[addr] = data;
+	ramLoc = data;
 }
 
 
 // PPU
-Memory::PPU::PPU(Memory::CPU& c, uint16_t& cu, int& scan) : currentVramAddr(cu), scanlineNum(scan), 
-NMICalled(c.NMICalled), inNMI(c.inNMI), inDMA(c.inDMA), DMAAddr(c.DMAAddr), 
-DMAPage(c.DMAPage), DMAVal(c.DMAVal), inOddCycle(c.inOddCycle), DMAdoneDummy(c.DMAdoneDummy), 
-register4014(c.arr[0x4014]) {
-	this->registers = &c.arr[0x2000];
-}
-
-uint16_t Memory::PPU::getAddr(uint16_t addr) {
-	if(addr >= 0x3000 && addr <= 0x3eFF) return addr & ~0x1000; // Memory Mirroring
+uint16_t Memory::getVRAMAddr(uint16_t addr) {
+	if(addr >= 0x3000 && addr <= 0x3EFF) return addr & ~0x1000; // Memory Mirroring
 	if(addr >= 0x3F20 && addr <= 0x3FFF) return addr & 0x3F1F; // Memory Mirroring
 	if(addr >= 0x3F10 && addr <= 0x3F1C && addr % 4 == 0) return addr & 0xFF0F; // Palette Mirroring
 
@@ -95,10 +91,10 @@ uint16_t Memory::PPU::getAddr(uint16_t addr) {
 	return addr;
 }
 
-uint8_t Memory::PPU::get8(uint16_t addr) {
-	return arr[getAddr(addr)];
+uint8_t Memory::getVRAM8(uint16_t addr) {
+	return mapper->getVRAM8(this->getVRAMAddr(addr));
 }
 
-void Memory::PPU::set8(uint16_t addr, uint8_t data) {
-	arr[this->getAddr(addr)] = data;
+void Memory::setVRAM8(uint16_t addr, uint8_t data) {
+	mapper->setVRAM8(this->getVRAMAddr(addr), data);
 }

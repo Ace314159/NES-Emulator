@@ -9,7 +9,7 @@
 using std::cout;
 using std::endl;
 
-PPU::PPU(Memory::PPU& m) : mem(m) { this->initPaletteTable("../res/Nintendulator-NTSC.pal"); }
+PPU::PPU(Memory& m) : mem(m) { this->initPaletteTable("../res/Nintendulator-NTSC.pal"); }
 
 void PPU::emulateCycle(bool afterCPU) {
 	if(afterCPU) {
@@ -39,9 +39,9 @@ void PPU::handleRegisterReads() {
 		break;
 	case 0x2007: // DATA
 		if(this->currentVramAddr <= 0x3EFF) {
-			mem.DATAReadBuffer = mem.get8(this->currentVramAddr);
+			mem.ppuDATAReadBuffer = mem.getVRAM8(this->currentVramAddr);
 		} else {
-			mem.DATAReadBuffer = mem.get8(this->currentVramAddr & ~0x1000);
+			mem.ppuDATAReadBuffer = mem.getVRAM8(this->currentVramAddr & ~0x1000);
 		}
 		this->currentVramAddr += 1 + ((this->CTRL >> 2) & 0x1) * 31;
 		break;
@@ -85,7 +85,7 @@ void PPU::handleRegisterWrites() {
 		this->onSecondWrite = !this->onSecondWrite;
 		break;
 	case 0x2007: // DATA
-		mem.set8(this->currentVramAddr++, this->DATA);
+		mem.setVRAM8(this->currentVramAddr++, this->DATA);
 		this->currentVramAddr += ((this->CTRL >> 2) & 0x1) * 31; // Ads extra 31 if bit 2 is set
 		break;
 	case 0x4014: // OAM DMA
@@ -198,7 +198,6 @@ void PPU::renderDot() {
 		if(this->chosenSpritePixelIndex == 0 && this->sprite0IsInSOAM && spriteColorNum != 0 && bgColorNum != 0 &&
 			!this->sprite0Hit && this->cycleNum != 255 + 1) {
 			this->sprite0Hit = true;
-			cout << (int)mem.OAM[3] << " " << (int)MASK << " " << (int)spriteColorNum << endl;
 			// exit(0);
 			this->STATUS |= (1 << 6); // Sets bit 6 or Sprite 0 Hit
 		}
@@ -226,11 +225,11 @@ void PPU::fetchBGData() {
 		}
 		break;
 	case 2: // NT Byte
-		this->tileNum = mem.get8(0x2000 | (v & 0x0FFF));
+		this->tileNum = mem.getVRAM8(0x2000 | (v & 0x0FFF));
 		break;
 	case 4: // AT Byte
 		{
-		uint8_t atByte = mem.get8(0x23C0 | (v & 0x0C00) | ((v >> 4) & 0x38) | ((v >> 2) & 0x07));
+		uint8_t atByte = mem.getVRAM8(0x23C0 | (v & 0x0C00) | ((v >> 4) & 0x38) | ((v >> 2) & 0x07));
 		uint8_t yBit = (v & 0x40) >> 5; // Bit 1 of coarse y in pos 1
 		uint8_t xBit = (v & 0x2) >> 1; // Bit 1 of carse x
 		// yx is used to select the corresponding 2 bits from the attribute byte
@@ -238,10 +237,10 @@ void PPU::fetchBGData() {
 		}
 		break;
 	case 6: // Low BG Tile Byte
-		this->lowTileByte = mem.get8(bgPage | (this->tileNum << 4) | fineY);
+		this->lowTileByte = mem.getVRAM8(bgPage | (this->tileNum << 4) | fineY);
 		break;
 	case 0: // High BG Tile Byte
-		this->highTileByte = mem.get8(bgPage | (this->tileNum << 4) | 8 | fineY);
+		this->highTileByte = mem.getVRAM8(bgPage | (this->tileNum << 4) | 8 | fineY);
 		break;
 	}
 }
@@ -301,13 +300,13 @@ void PPU::fetchSpriteData() { // Sprite Fetches
 		this->spriteXs[spriteNum] = this->secondaryOAM[spriteNum * 4 + 3];
 		break;
 	case 6: // Low Sprite Tile Byte
-		this->lowTileByte = mem.get8(spritePage | (this->tileNum << 4) | fineY);
+		this->lowTileByte = mem.getVRAM8(spritePage | (this->tileNum << 4) | fineY);
 		if(((this->spriteAttrs[spriteNum] >> 6) & 0x1) == 1) 
 			this->lowTileByte = this->BitReverseTable[this->lowTileByte];
 		this->lowSpriteShiftRegs[spriteNum] = this->lowTileByte;
 		break;
 	case 0: // Hgih Sprite Tile Byte
-		this->highTileByte = mem.get8(spritePage | (this->tileNum << 4) | 8 | fineY);
+		this->highTileByte = mem.getVRAM8(spritePage | (this->tileNum << 4) | 8 | fineY);
 		if(((this->spriteAttrs[spriteNum] >> 6) & 0x1) == 1)
 			this->highTileByte = this->BitReverseTable[this->highTileByte];
 		this->highSpriteShiftRegs[spriteNum] = this->highTileByte;
@@ -368,19 +367,19 @@ void PPU::incrementScrollY() {
 PPU::Color PPU::getBGColor(uint8_t paletteNum, uint8_t colorNum) {
 	uint8_t color;
 	if(this->isRenderingBG()) {
-		if(colorNum == 0) color = mem.get8(0x3F00);
-		else color = mem.get8(0x3F00 | (paletteNum << 2) | colorNum);
+		if(colorNum == 0) color = mem.getVRAM8(0x3F00);
+		else color = mem.getVRAM8(0x3F00 | (paletteNum << 2) | colorNum);
 	} else {
 		if(this->currentVramAddr >= 0x3F00 && this->currentVramAddr <= 0x3FFF) 
-			color = mem.get8(this->currentVramAddr);
-		color = mem.get8(0x3F00);
+			color = mem.getVRAM8(this->currentVramAddr);
+		color = mem.getVRAM8(0x3F00);
 	}
 	return this->paletteTable[color];
 }
 
 PPU::Color PPU::getSpriteColor(uint8_t paletteNum, uint8_t colorNum) {
 	if(colorNum == 0) throw std::runtime_error("Sprite Color was 0");
-	uint8_t color = mem.get8(0x3F10 | (paletteNum << 2) | colorNum);
+	uint8_t color = mem.getVRAM8(0x3F10 | (paletteNum << 2) | colorNum);
 	return this->paletteTable[color];
 }
 

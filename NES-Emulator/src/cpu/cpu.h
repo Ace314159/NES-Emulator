@@ -50,8 +50,8 @@ public:
 	};
 
 
-	CPU(Memory::CPU& m, int& cyc, int& scan);
-	Memory::CPU& mem;
+	CPU(Memory& m, int& cyc, int& scan);
+	Memory& mem;
 
 	int& CYC;
 	int& SL;
