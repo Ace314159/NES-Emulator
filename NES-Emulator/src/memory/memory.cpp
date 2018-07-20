@@ -8,15 +8,14 @@ using std::endl;
 Memory::Memory(uint16_t& cu, int& scan, int& cyc) : currentVramAddr(cu), scanlineNum(scan), cycleNum(cyc) { }
 
 // CPU
-
 uint8_t& Memory::getRAMLoc(uint16_t& addr) {
 	// Memory Mirroring
-	if(addr >= 0x0800 && addr < 0x2000) addr &= 0x07FF; // RAM Mirroring
+	if(addr >= 0x0800 && addr < 0x2000) addr &= 0x07FF; // Internal RAM Mirroring
 	if(addr > 0x2007 && addr < 0x4000) addr &= 0xE007; // PPU Register Mirroring
 	
 	if(addr < 0x0800) return this->mapper->internalRAM[addr];
-	if(addr >= 0x2000 && addr <= 0x2007) return this->mapper->ppuRegisters[addr - 0x2000];
-	if(addr >= 0x4000 && addr <= 0x4017) return this->mapper->apuRegisters[addr - 0x4000];
+	if(/*addr >= 0x2000 && */addr <= 0x2007) return this->mapper->ppuRegisters[addr - 0x2000];
+	if(/*addr >= 0x4000 && */addr <= 0x4017) return this->mapper->apuRegisters[addr - 0x4000];
 	return this->mapper->getRAM8(addr);
 }
 
@@ -27,7 +26,7 @@ uint8_t Memory::getRAM8(uint16_t addr) {
 		throw "DMA";
 	}*/
 	uint8_t& ramLoc = this->getRAMLoc(addr);
-	if(addr >= 0x2000 && addr <= 0x2007) {
+	if(addr >= 0x2000 && addr <= 0x2007) { // PPU Registers
 		if(addr == 0x2000 || addr == 0x2001 || addr == 0x2003 || addr == 0x2005 || addr == 0x2006) {
 			return this->cpuPpuBus; // PPU Write Only Registers
 		} else if(addr == 0x2002) {
@@ -53,10 +52,10 @@ uint8_t Memory::getRAM8(uint16_t addr) {
 
 void Memory::setRAM8(uint16_t addr, uint8_t data) {
 	uint8_t& ramLoc = this->getRAMLoc(addr);
-	if(addr < 0x07FF) { // Regular Memory
+	if(addr < 0x0800) { // Internal RAM
 		ramLoc = data;
 		return;
-	} else if(addr != 0x2002) { // PPU Write Registers
+	} else if(addr >= 0x2000 && addr <= 0x2007 && addr != 0x2002) { // PPU Registers - Read Only Register
 		if(addr == 0x2004 && (this->scanlineNum < 240 || this->scanlineNum == 261))
 			// || (addr == 0x2000 && this->ppuMem.canWrite)) // Can't write to 0x2000 for first 3000 cycles
 			return; // Ignore writes to OAM Data during rendering
@@ -71,15 +70,18 @@ void Memory::setRAM8(uint16_t addr, uint8_t data) {
 		//arr[0x2002] = (arr[0x2002] & ~(0x1F)) | (this->ppuMem.cpuBus & 0x1F);
 		this->ppuRegisterWritten = 0x4014;
 		return;
+	} else if(addr >= 0x4020) { // Cartridge RAM
+		this->mapper->setRAM8(addr, data); // Run mapper specific code
+	} else { // APU and I/O Registers (0x4000 - 0x4017)
+		ramLoc = data;
 	}
-	ramLoc = data;
 }
 
 
 // PPU
 uint16_t Memory::getVRAMAddr(uint16_t addr) {
-	if(addr >= 0x3000 && addr <= 0x3EFF) return addr & ~0x1000; // Memory Mirroring
-	if(addr >= 0x3F20 && addr <= 0x3FFF) return addr & 0x3F1F; // Memory Mirroring
+	if(addr >= 0x3000 && addr < 0x3F00) return addr & ~0x1000; // Some Nametable Mirroring
+	if(addr >= 0x3F20 && addr < 0x4000) return addr & 0x3F1F; // Palette Mirroring
 	if(addr >= 0x3F10 && addr <= 0x3F1C && addr % 4 == 0) return addr & 0xFF0F; // Palette Mirroring
 
 	if(addr >= 0x2400 && addr < 0x3000) { // Nametable Mirroring
