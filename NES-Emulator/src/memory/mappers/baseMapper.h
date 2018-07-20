@@ -9,6 +9,7 @@
 
 class BaseMapper {
 protected:
+	uint8_t temp; // Used when accessing from 0x4020 to 0x5FFF
 public:
 	virtual void setRAM8(uint16_t addr, uint8_t data) = 0;
 	virtual uint8_t& getRAM8(uint16_t addr) = 0;
