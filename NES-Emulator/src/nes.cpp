@@ -98,7 +98,7 @@ Memory& NES::loadRom(std::string romFileName) {
 }
 
 void NES::handleInput() {
-	if((this->cpu.mem.mapper->apuRegisters[0x4016 - 0x4000] & 0x1) == 1) {
+	if((this->cpu.mem.mapper->apuRegisters[0x16] & 0x1) == 1) {
 		this->cpu.mem.buttons1[0] = glfwGetKey(Graphics::window, GLFW_KEY_A);
 		this->cpu.mem.buttons1[1] = glfwGetKey(Graphics::window, GLFW_KEY_B);
 		this->cpu.mem.buttons1[2] = glfwGetKey(Graphics::window, GLFW_KEY_E);
@@ -109,7 +109,7 @@ void NES::handleInput() {
 		this->cpu.mem.buttons1[7] = glfwGetKey(Graphics::window, GLFW_KEY_RIGHT);
 		this->cpu.mem.buttons1Index = 0;
 	}
-	if((this->cpu.mem.mapper->apuRegisters[0x4017 - 0x4000] & 0x1) == 1) {
+	if((this->cpu.mem.mapper->apuRegisters[0x17] & 0x1) == 1) {
 		this->cpu.mem.buttons2[0] = 0;
 		this->cpu.mem.buttons2[1] = 0;
 		this->cpu.mem.buttons2[2] = 0;

@@ -43,7 +43,7 @@ uint8_t Memory::getRAM8(uint16_t addr) {
 		}
 		// Has to be 0x2004
 		// this->ppuMem.registerRead = 0x2004; - Nothing happens anyway
-		return this->OAM[this->mapper->ppuRegisters[0x2003 - 0x2000]]; // Gets OAM data at OAMADDR
+		return this->OAM[this->mapper->ppuRegisters[0x3]]; // Gets OAM data at OAMADDR
 	}
 	else if(addr == 0x4014) return this->cpuPpuBus; // PPU Write Only Register
 	else if(addr == 0x4016) return buttons1[buttons1Index++ % 8];
@@ -62,7 +62,7 @@ void Memory::setRAM8(uint16_t addr, uint8_t data) {
 			return; // Ignore writes to OAM Data during rendering
 		ramLoc = this->cpuPpuBus = data;
 		// Set low 5 bits of PPUSTATUS
-		mapper->ppuRegisters[0x2002 - 0x2000] = (mapper->ppuRegisters[2] & ~(0x1F)) | (this->cpuPpuBus & 0x1F);
+		mapper->ppuRegisters[0x2] = (mapper->ppuRegisters[0x2] & ~(0x1F)) | (this->cpuPpuBus & 0x1F);
 
 		this->ppuRegisterWritten = addr;
 	} else if(addr == 0x4014) { // PPU Write Only Register
