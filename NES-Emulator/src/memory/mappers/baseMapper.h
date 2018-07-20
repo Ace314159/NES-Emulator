@@ -10,9 +10,9 @@
 class BaseMapper {
 protected:
 public:
-	virtual void setRAM8(uint16_t addr, uint8_t val) = 0;
+	virtual void setRAM8(uint16_t addr, uint8_t data) = 0;
 	virtual uint8_t& getRAM8(uint16_t addr) = 0;
-	virtual void setVRAM8(uint16_t addr, uint8_t val) = 0;
+	virtual void setVRAM8(uint16_t addr, uint8_t data) = 0;
 	virtual uint8_t getVRAM8(uint16_t addr) const = 0;
 
 	std::array<uint8_t, 0x0800> internalRAM; //  0x0000 - 0x07FF

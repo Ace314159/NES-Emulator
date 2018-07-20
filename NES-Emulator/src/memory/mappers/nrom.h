@@ -9,9 +9,9 @@ private:
 public:
 	NROM(std::vector<uint8_t>& PRG, std::vector<uint8_t>& CHR, uint8_t prgRamSize);
 
-	void setRAM8(uint16_t addr, uint8_t val);
+	void setRAM8(uint16_t addr, uint8_t data);
 	uint8_t& getRAM8(uint16_t addr);
-	void setVRAM8(uint16_t addr, uint8_t val);
+	void setVRAM8(uint16_t addr, uint8_t data);
 	uint8_t getVRAM8(uint16_t addr) const;
 };
 

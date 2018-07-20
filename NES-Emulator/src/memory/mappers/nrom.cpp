@@ -1,9 +1,10 @@
 #include "nrom.h"
 
 NROM::NROM(std::vector<uint8_t>& PRG, std::vector<uint8_t>& CHR, uint8_t prgRamSize) {
+	// TODO: Use prgRamSize to limit RAM
+
 	// If there is just 1 16K PRG Block, then it is mirrored to the next 16K, otherwise the next 16K is filled
 	// with the next part of the ROM
-
 	std::copy(PRG.begin(), PRG.end(), this->cartridge.begin() + 0x8000 - 0x4020);
 	if(PRG.capacity() == 0x4000) {
 		std::copy(this->cartridge.begin() + 0x8000 - 0x4020, this->cartridge.begin() + 0xC000 - 0x4020,
@@ -14,8 +15,8 @@ NROM::NROM(std::vector<uint8_t>& PRG, std::vector<uint8_t>& CHR, uint8_t prgRamS
 	std::copy(CHR.begin(), CHR.end(), this->vram.begin());
 }
 
-void NROM::setRAM8(uint16_t addr, uint8_t val) {
-	cartridge[addr - 0x4020] = val;
+void NROM::setRAM8(uint16_t addr, uint8_t data) {
+	cartridge[addr - 0x4020] = data;
 }
 
 
@@ -23,8 +24,8 @@ uint8_t& NROM::getRAM8(uint16_t addr) {
 	return cartridge[addr - 0x4020];
 }
 
-void NROM::setVRAM8(uint16_t addr, uint8_t val) {
-	vram[addr] = val;
+void NROM::setVRAM8(uint16_t addr, uint8_t data) {
+	vram[addr] = data;
 }
 
 uint8_t NROM::getVRAM8(uint16_t addr) const {
