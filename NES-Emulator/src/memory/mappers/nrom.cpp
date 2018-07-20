@@ -6,7 +6,7 @@ NROM::NROM(std::vector<uint8_t>& PRG, std::vector<uint8_t>& CHR, uint8_t prgRamS
 	// If there is just 1 16K PRG Block, then it is mirrored to the next 16K, otherwise the next 16K is filled
 	// with the next part of the ROM
 	std::copy(PRG.begin(), PRG.end(), this->cartridge.begin() + 0x8000 - 0x6000);
-	if(PRG.capacity() == 0x4000) {
+	if(PRG.size() == 0x4000) {
 		std::copy(this->cartridge.begin() + 0x8000 - 0x6000, this->cartridge.begin() + 0xC000 - 0x6000,
 			this->cartridge.begin() + 0xC000 - 0x6000);
 	}
