@@ -13,7 +13,7 @@ public:
 
 	// CPU
 	// Main
-	uint8_t& getRAMLoc(uint16_t& addr); // Gets actual address after memory mirroring
+	uint8_t& getRAMLoc(uint16_t& addr); // Gets memory location from mapper
 	uint8_t getRAM8(uint16_t addr);
 	void setRAM8(uint16_t addr, uint8_t data);
 
@@ -38,16 +38,13 @@ public:
 	bool DMAdoneDummy = false;
 
 	// PPU
-	enum class NametableMirroringType { HORIZONTAL, VERTICAL, ONE, FOUR };
-
 	// Main
-	uint16_t getVRAMAddr(uint16_t addr); // Gets Actual Address after memory mirroring
+	uint8_t& getVRAMLoc(uint16_t& addr); // Gets memory location from mapper
 	std::array<uint8_t, 0x100> OAM = {}; // Object Attribute Memory
 	uint8_t getVRAM8(uint16_t addr);
 	void setVRAM8(uint16_t addr, uint8_t data);
 
 	// Variables
-	NametableMirroringType nametableMirroringType;
 	uint16_t& currentVramAddr;
 	int& scanlineNum;
 

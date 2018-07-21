@@ -8,7 +8,7 @@ std::unique_ptr<BaseMapper> BaseMapper::getMapper(uint8_t mapperID, std::vector<
 
 	switch(mapperID) {
 	case 0:
-		return std::make_unique<NROM>(PRG, CHR, prgRamSize);
+		return std::make_unique<NROM>(PRG, CHR);
 		break;
 	default:
 		throw std::runtime_error("Mapper " + std::to_string(mapperID) + " is not supported!");

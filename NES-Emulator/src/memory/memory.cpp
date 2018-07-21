@@ -20,6 +20,7 @@ uint8_t& Memory::getRAMLoc(uint16_t& addr) {
 }
 
 uint8_t Memory::getRAM8(uint16_t addr) {
+	this->mapper->writeCycleDone = false;
 	/*if(this->DMACalled) {
 		this->inDMA = true;
 		this->DMACalled = false;
@@ -51,6 +52,7 @@ uint8_t Memory::getRAM8(uint16_t addr) {
 }
 
 void Memory::setRAM8(uint16_t addr, uint8_t data) {
+	this->mapper->writeCycleDone = true;
 	uint8_t& ramLoc = this->getRAMLoc(addr);
 	if(addr < 0x0800) { // Internal RAM
 		ramLoc = data;
@@ -79,24 +81,41 @@ void Memory::setRAM8(uint16_t addr, uint8_t data) {
 
 
 // PPU
-uint16_t Memory::getVRAMAddr(uint16_t addr) {
-	if(addr >= 0x3000 && addr < 0x3F00) return addr & ~0x1000; // Some Nametable Mirroring
-	if(addr >= 0x3F20 && addr < 0x4000) return addr & 0x3F1F; // Palette Mirroring
-	if(addr >= 0x3F10 && addr <= 0x3F1C && addr % 4 == 0) return addr & 0xFF0F; // Palette Mirroring
+uint8_t& Memory::getVRAMLoc(uint16_t& addr) {
+	// Pattern Tables
+	if(addr < 0x2000) return this->mapper->getVRAM8(addr);
 
-	if(addr >= 0x2400 && addr < 0x3000) { // Nametable Mirroring
-		if(this->nametableMirroringType == NametableMirroringType::HORIZONTAL) return addr & ~0x0400;
-		if(this->nametableMirroringType == NametableMirroringType::VERTICAL) return addr & ~0x0800;
-		if(this->nametableMirroringType == NametableMirroringType::ONE) return addr & 0x23FF;
+	// Nametables
+	if(addr >= 0x3000 && addr < 0x3F00) addr &= ~0x1000;
+	if(addr < 0x3000) {
+		switch(mapper->nametableMirroringType) {
+		case BaseMapper::NametableMirroringType::HORIZONTAL:
+			addr &= ~0xF400;
+			break;
+		case BaseMapper::NametableMirroringType::VERTICAL:
+			addr &= ~0xF800;
+			break;
+		case BaseMapper::NametableMirroringType::ONE_A:
+			addr &= ~0xFC00;
+			break;
+		case BaseMapper::NametableMirroringType::ONE_B:
+			addr = (addr & ~0xFC00) | 0x0400;
+			break;
+		}
+		return this->mapper->nametables[addr];
 	}
 
-	return addr;
+	// Palette
+	if(addr < 0x4000) addr &= 0x3F1F;
+	if(addr >= 0x3F10 && addr <= 0x3F1C && addr % 4 == 0) addr &= 0xFF0F;
+	return this->mapper->palette[addr - 0x3F00];
 }
 
 uint8_t Memory::getVRAM8(uint16_t addr) {
-	return mapper->getVRAM8(this->getVRAMAddr(addr));
+	return this->getVRAMLoc(addr);
 }
 
 void Memory::setVRAM8(uint16_t addr, uint8_t data) {
-	mapper->setVRAM8(this->getVRAMAddr(addr), data);
+	if(addr < 0x2000) this->mapper->setVRAM8(addr, data);
+	this->getVRAMLoc(addr) = data;
 }
