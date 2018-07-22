@@ -83,7 +83,7 @@ Memory& NES::loadRom(std::string romFileName) {
 	PRG.resize(prgBlocks * 0x4000);
 	CHR.resize(chrBlocks * 0x2000);
 	romData.read(&PRG[0], prgBlocks * 0x4000); // PRG
-	romData.read(&CHR[0], chrBlocks * 0x2000); // CHR
+	if(chrBlocks > 0) romData.read(&CHR[0], chrBlocks * 0x2000); // CHR
 	this->mem.mapper = BaseMapper::getMapper(mapperID, PRG, CHR, prgRamBlocks);
 
 	BaseMapper::NametableMirroringType mirroringType;
