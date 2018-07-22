@@ -153,6 +153,7 @@
   <ItemGroup>
     <ClInclude Include="src\cpu\cpu.h" />
     <ClInclude Include="src\memory\mappers\baseMapper.h" />
+    <ClInclude Include="src\memory\mappers\mmc1.h" />
     <ClInclude Include="src\memory\mappers\nrom.h" />
     <ClInclude Include="src\memory\memory.h" />
     <ClInclude Include="src\ppu\graphics.h" />
@@ -165,6 +166,7 @@
     <ClCompile Include="glad.c" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\memory\mappers\baseMapper.cpp" />
+    <ClCompile Include="src\memory\mappers\mmc1.cpp" />
     <ClCompile Include="src\memory\mappers\nrom.cpp" />
     <ClCompile Include="src\memory\memory.cpp" />
     <ClCompile Include="src\nes.cpp" />

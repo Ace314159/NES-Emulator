@@ -36,6 +36,9 @@
     <ClInclude Include="src\memory\mappers\nrom.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\memory\mappers\mmc1.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="glad.c">
@@ -66,6 +69,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\memory\mappers\nrom.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\memory\mappers\mmc1.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

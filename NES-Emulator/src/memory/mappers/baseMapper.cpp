@@ -1,5 +1,6 @@
 #include "baseMapper.h"
 #include "nrom.h"
+#include "mmc1.h"
 
 #include <string>
 
@@ -7,9 +8,11 @@ std::unique_ptr<BaseMapper> BaseMapper::getMapper(uint8_t mapperID, std::vector<
 	std::vector<uint8_t>& CHR, uint8_t prgRamSize) {
 
 	switch(mapperID) {
-	case 0:
+	case 0x00:
 		return std::make_unique<NROM>(PRG, CHR);
 		break;
+	case 0x01:
+		return std::make_unique<MMC1>(PRG, CHR);
 	default:
 		throw std::runtime_error("Mapper " + std::to_string(mapperID) + " is not supported!");
 	}
