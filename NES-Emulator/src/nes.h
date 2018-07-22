@@ -10,10 +10,6 @@
 class NES {
 private:
 	const std::chrono::nanoseconds CLOCK_TIME;
-	void corruptedROM();
-
-	// Constants from ROM Header
-	bool sRAMUsed;
 public:
 	NES(const std::chrono::nanoseconds ct, std::string romFileName);
 	Memory& loadRom(std::string romFileName);

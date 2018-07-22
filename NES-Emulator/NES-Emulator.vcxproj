@@ -156,6 +156,7 @@
     <ClInclude Include="src\memory\mappers\mmc1.h" />
     <ClInclude Include="src\memory\mappers\nrom.h" />
     <ClInclude Include="src\memory\memory.h" />
+    <ClInclude Include="src\headers\iNESHeader.h" />
     <ClInclude Include="src\ppu\graphics.h" />
     <ClInclude Include="src\nes.h" />
     <ClInclude Include="src\ppu\ppu.h" />
@@ -164,6 +165,7 @@
     <ClCompile Include="src\cpu\cpu.cpp" />
     <ClCompile Include="src\cpu\opcodes.cpp" />
     <ClCompile Include="glad.c" />
+    <ClCompile Include="src\headers\iNESHeader.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\memory\mappers\baseMapper.cpp" />
     <ClCompile Include="src\memory\mappers\mmc1.cpp" />

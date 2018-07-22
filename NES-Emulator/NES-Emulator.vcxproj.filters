@@ -15,9 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\nes.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\cpu\cpu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -39,15 +36,18 @@
     <ClInclude Include="src\memory\mappers\mmc1.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\nes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\headers\iNESHeader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="glad.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\nes.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\cpu\cpu.cpp">
@@ -72,6 +72,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\memory\mappers\mmc1.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\nes.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\headers\iNESHeader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

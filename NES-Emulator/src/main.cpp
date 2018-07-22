@@ -16,7 +16,7 @@ int main() {
 
 	try {
 		Graphics::init();
-		NES nes = NES(NTSC_FREQ, "../Roms/Super Mario Bros (PC10).nes");
+		NES nes = NES(NTSC_FREQ, "Super Mario Bros (PC10).nes");
 		while(!glfwWindowShouldClose(Graphics::window)) {
 			nes.tick();
 		}

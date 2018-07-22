@@ -9,10 +9,6 @@
 using std::cout;
 using std::endl;
 
-void NES::corruptedROM() {
-	throw std::runtime_error("Corrupted ROM!");
-}
-
 NES::NES(const std::chrono::nanoseconds ct, std::string romFileName) : CLOCK_TIME(ct), ppu(loadRom(romFileName)) {}
 
 void NES::tick() {
@@ -42,55 +38,23 @@ Memory& NES::loadRom(std::string romFileName) {
 		throw std::runtime_error("Could not read ROM file");
 	}
 
-	// Check if first 4 bytes are valid - Contain ASCII Text for NES and ends with 0x1A
-	uint32_t buffer32;
-	//romData.seekg(0, std::ios::beg);
-	romData.read(reinterpret_cast<uint8_t*>(&buffer32), 4);
-	if(buffer32 != 0x1A53454e) { // ASCII For NES/1A flipped for endianness
-		this->corruptedROM();
-	}
+	iNESHeader header;
+	romData.read(reinterpret_cast<uint8_t*>(&header), 16);
+	header.parse();
+	romData.seekg(512 * header.containsTrainer, std::ios::cur);
 
-	// Get number of 16K PRG-ROM blocks - Program ROM
-	const uint8_t prgBlocks = romData.get() & 0xff;
-	// Get number of 8K CHR-ROM blocks - Character ROM
-	const uint8_t chrBlocks = romData.get() & 0xff;
-	// Get mapper id and control bytes
-	uint8_t buffer = romData.get() & 0xff;
-	uint8_t mapperID = buffer >> 4; // Lower 4 bits of mapper id
-	bool fourScreenVRAM = buffer & (1 << 3);
-	bool trainerExists = buffer & (1 << 2);
-	this->sRAMUsed = buffer & (1 << 1);
-	bool isVerticalMirroring = buffer & (1 << 0);
-	
-	// Get upper 4 bytes of mapper id
-	buffer = romData.get() & 0xff;
-	if((buffer & 0xff) != 0) { // Check if lower 4 bits of control byte 2 are 0s
-		this->corruptedROM();
-	}
-	mapperID |= buffer;
-	// Get size of PRG RAM - in 8k blocks,  0 means 1 8k
-	const uint8_t prgRamBlocks = std::max(1, static_cast<int>(romData.get()));
-	// Check if last 7 bytes are 0s
-	uint64_t buffer64;
-	romData.read(reinterpret_cast<uint8_t*>(&buffer64), 7);
-	if(buffer != 0) {
-		this->corruptedROM();
-	}
-	romData.seekg(512 * trainerExists, std::ios::cur);
-
-	// Use mapper to load into memory
+	// Initialize mapper
 	std::vector<uint8_t> PRG, CHR;
-	PRG.resize(prgBlocks * 0x4000);
-	CHR.resize(chrBlocks * 0x2000);
-	romData.read(&PRG[0], prgBlocks * 0x4000); // PRG
-	if(chrBlocks > 0) romData.read(&CHR[0], chrBlocks * 0x2000); // CHR
-	this->mem.mapper = BaseMapper::getMapper(mapperID, PRG, CHR, prgRamBlocks);
+	PRG.resize(header.prgRomSize * 0x4000);
+	if(header.chrRomSize > 0) CHR.resize(header.chrRomSize * 0x2000);
+	else CHR.resize(0x2000); // Otherwise initializes 8K of CHR RAM
+	romData.read(&PRG[0], header.prgRomSize * 0x4000); // PRG
+	if(header.chrRomSize > 0) romData.read(&CHR[0], header.chrRomSize * 0x2000); // CHR
 
-	BaseMapper::NametableMirroringType mirroringType;
-	if(fourScreenVRAM) mirroringType = BaseMapper::NametableMirroringType::FOUR;
-	else if(isVerticalMirroring) mirroringType = BaseMapper::NametableMirroringType::VERTICAL;
-	else mirroringType = BaseMapper::NametableMirroringType::HORIZONTAL;
-	this->mem.mapper->setNametableMirroringType(mirroringType);
+	this->mem.mapper = BaseMapper::getMapper(header.mapperID, PRG, CHR, header.prgRamSize);
+	this->mem.mapper->header = header;
+	this->mem.mapper->setNametableMirroringType(
+		static_cast<BaseMapper::NametableMirroringType>(header.nametableMirroringType));
 
 	// Set the PC to the memory address at the RESET vector location (0xFFFC/D)
 	this->cpu.PC = this->mem.mapper->getRAM8(0xFFFC) | (this->mem.mapper->getRAM8(0xFFFD) << 8);

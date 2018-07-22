@@ -1,10 +1,10 @@
 #pragma once
 
-#include <cstdint>
+#include "../../headers/iNESHeader.h"
+
 #include <array>
 #include <vector>
 #include <memory>
-#include <unordered_map>
 
 
 class BaseMapper {
@@ -12,10 +12,12 @@ protected:
 	uint8_t temp; // Used when accessing from 0x4020 to 0x5FFF
 public:
 	// Nametable Mirroring - ONE_A is 0x2000 - 0x23FF and ONE_B is 0x2400 - 0x27FF
-	enum class NametableMirroringType { HORIZONTAL, VERTICAL, ONE_A, ONE_B, FOUR };
+	enum class NametableMirroringType { HORIZONTAL = 0, VERTICAL = 1, ONE_A = 2, ONE_B = 3, FOUR = 4};
 	NametableMirroringType nametableMirroringType;
 
 	bool writeCycleDone = false;
+	iNESHeader header;
+
 
 	virtual void setRAM8(uint16_t addr, uint8_t data) = 0;
 	virtual uint8_t& getRAM8(uint16_t addr) = 0;
