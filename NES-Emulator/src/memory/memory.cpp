@@ -54,15 +54,20 @@ uint8_t Memory::getRAM8(uint16_t addr) {
 void Memory::setRAM8(uint16_t addr, uint8_t data) {
 	this->mapper->writeCycleDone = true;
 	uint8_t& ramLoc = this->getRAMLoc(addr);
-	if(addr < 0x0800) { // Internal RAM
+
+	// Internal RAM
+	if(addr < 0x0800) {
 		ramLoc = data;
 		return;
-	} else if(addr >= 0x2000 && addr <= 0x2007 && addr != 0x2002) { // PPU Registers - Read Only Register
+	}
+	
+	// PPU Registers - Write Registers
+	if(addr >= 0x2000 && addr <= 0x2007 && addr != 0x2002) { // 0x2002 is Read Only
 		if(addr == 0x2004 && (this->scanlineNum < 240 || this->scanlineNum == 261))
 			// || (addr == 0x2000 && this->ppuMem.canWrite)) // Can't write to 0x2000 for first 3000 cycles
 			return; // Ignore writes to OAM Data during rendering
 		ramLoc = this->cpuPpuBus = data;
-		// Set low 5 bits of PPUSTATUS
+		// Set low 5 bits of PPUSTATUS - TODO: Find better way
 		mapper->ppuRegisters[0x2] = (mapper->ppuRegisters[0x2] & ~(0x1F)) | (this->cpuPpuBus & 0x1F);
 
 		this->ppuRegisterWritten = addr;
@@ -87,23 +92,7 @@ uint8_t& Memory::getVRAMLoc(uint16_t& addr) {
 
 	// Nametables
 	if(addr >= 0x3000 && addr < 0x3F00) addr &= ~0x1000;
-	if(addr < 0x3000) {
-		switch(mapper->nametableMirroringType) {
-		case BaseMapper::NametableMirroringType::HORIZONTAL:
-			addr &= ~0xF400;
-			break;
-		case BaseMapper::NametableMirroringType::VERTICAL:
-			addr &= ~0xF800;
-			break;
-		case BaseMapper::NametableMirroringType::ONE_A:
-			addr &= ~0xFC00;
-			break;
-		case BaseMapper::NametableMirroringType::ONE_B:
-			addr = (addr & ~0xFC00) | 0x0400;
-			break;
-		}
-		return this->mapper->nametables[addr];
-	}
+	if(addr < 0x3000) return *this->mapper->nametablePtrs[addr - 0x2000];
 
 	// Palette
 	if(addr < 0x4000) addr &= 0x3F1F;

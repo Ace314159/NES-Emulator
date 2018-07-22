@@ -61,13 +61,7 @@ Memory& NES::loadRom(std::string romFileName) {
 	bool trainerExists = buffer & (1 << 2);
 	this->sRAMUsed = buffer & (1 << 1);
 	bool isVerticalMirroring = buffer & (1 << 0);
-	if(fourScreenVRAM) {
-		this->mem.nametableMirroringType = Memory::NametableMirroringType::FOUR;
-	} else {
-		if(isVerticalMirroring)
-			this->mem.nametableMirroringType = Memory::NametableMirroringType::VERTICAL;
-		else this->mem.nametableMirroringType = Memory::NametableMirroringType::HORIZONTAL;
-	}
+	
 	// Get upper 4 bytes of mapper id
 	buffer = romData.get() & 0xff;
 	if((buffer & 0xff) != 0) { // Check if lower 4 bits of control byte 2 are 0s
@@ -92,8 +86,14 @@ Memory& NES::loadRom(std::string romFileName) {
 	romData.read(&CHR[0], chrBlocks * 0x2000); // CHR
 	this->mem.mapper = BaseMapper::getMapper(mapperID, PRG, CHR, prgRamBlocks);
 
+	BaseMapper::NametableMirroringType mirroringType;
+	if(fourScreenVRAM) mirroringType = BaseMapper::NametableMirroringType::FOUR;
+	else if(isVerticalMirroring) mirroringType = BaseMapper::NametableMirroringType::VERTICAL;
+	else mirroringType = BaseMapper::NametableMirroringType::HORIZONTAL;
+	this->mem.mapper->setNametableMirroringType(mirroringType);
+
 	// Set the PC to the memory address at the RESET vector location (0xFFFC/D)
-	this->cpu.PC = this->mem.getRAM8(0xFFFC) | (this->mem.getRAM8(0xFFFD) << 8);
+	this->cpu.PC = this->mem.mapper->getRAM8(0xFFFC) | (this->mem.mapper->getRAM8(0xFFFD) << 8);
 	return mem;
 }
 

@@ -15,3 +15,29 @@ std::unique_ptr<BaseMapper> BaseMapper::getMapper(uint8_t mapperID, std::vector<
 	}
 }
 
+void BaseMapper::setNametableMirroringType(NametableMirroringType type) {
+	this->nametableMirroringType = type;
+	std::array<uint8_t, 4> indices;
+	switch(type) {
+	case NametableMirroringType::HORIZONTAL:
+		indices = {0, 0, 1, 1};
+		break;
+	case NametableMirroringType::VERTICAL:
+		indices = {0, 1, 0, 1};
+		break;
+	case NametableMirroringType::ONE_A:
+		indices = {0, 0, 0, 0};
+		break;
+	case NametableMirroringType::ONE_B:
+		indices = {1, 1, 1, 1};
+		break;
+	case NametableMirroringType::FOUR:
+		indices = {0, 1, 2, 3};
+		break;
+	}
+
+	for(size_t i = 0; i < this->nametablePtrs.size(); i++) {
+		uint8_t index = indices[i / 0x400];
+		this->nametablePtrs[i] = &this->nametables[index * 0x400 + i % 0x400];
+	}
+}

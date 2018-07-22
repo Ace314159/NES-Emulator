@@ -28,9 +28,12 @@ public:
 	std::array<uint8_t, 0x0018> apuRegisters;  // 0x4000 - 0x4017 - Not really APU registers, but almost all are
 	// VRAM
 	std::array<uint8_t, 0x1000> nametables;    // 0x2000 - 0x2FFF
+	std::array<uint8_t*, 0x1000> nametablePtrs;
 	std::array<uint8_t, 0x0020> palette{};     // 0x3F00 - 0x3F1F
 
 	static std::unique_ptr<BaseMapper> getMapper(uint8_t mapperID, std::vector<uint8_t>& PRG,
 		std::vector<uint8_t>& CHR, uint8_t prgRamSize);
+
+	void setNametableMirroringType(NametableMirroringType type);
 };
 
