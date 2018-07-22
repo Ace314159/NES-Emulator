@@ -52,7 +52,7 @@ Memory& NES::loadRom(std::string romFileName) {
 	if(header.chrRomSize > 0) romData.read(&CHR[0], header.chrRomSize * 0x2000); // CHR
 
 	cout << "Using Mapper " << (int)header.mapperID << endl;
-	this->mem.mapper = BaseMapper::getMapper(header.mapperID, PRG, CHR, header.prgRamSize);
+	this->mem.mapper = BaseMapper::getMapper(header.mapperID, PRG, CHR);
 	this->mem.mapper->header = header;
 	this->mem.mapper->setNametableMirroringType(
 		static_cast<BaseMapper::NametableMirroringType>(header.nametableMirroringType));

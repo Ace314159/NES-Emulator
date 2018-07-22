@@ -20,7 +20,7 @@ uint8_t& MMC1::getRAMLoc(uint16_t addr) {
 		break;
 	case 3:
 		if(addr < 0xC000) addr += this->PRGBank * 0x4000;
-		else addr += (this->prgRom.size() & 0xffff) - 0x4000;
+		else addr += (this->header.prgRomSize - 2) * 0x4000;
 		break;
 	}
 	return this->prgRom[addr - 0x8000];

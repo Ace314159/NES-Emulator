@@ -5,11 +5,15 @@
 #include <array>
 #include <vector>
 #include <memory>
+#include <iostream>
+
+using std::cout;
+using std::endl;
 
 
 class BaseMapper {
 protected:
-	uint8_t temp; // Used when accessing from 0x4020 to 0x5FFF
+	uint8_t temp; // A return value when no memory should be changed
 public:
 	// Nametable Mirroring - ONE_A is 0x2000 - 0x23FF and ONE_B is 0x2400 - 0x27FF
 	enum class NametableMirroringType { HORIZONTAL = 0, VERTICAL = 1, ONE_A = 2, ONE_B = 3, FOUR = 4};
@@ -34,7 +38,7 @@ public:
 	std::array<uint8_t, 0x0020> palette{};     // 0x3F00 - 0x3F1F
 
 	static std::unique_ptr<BaseMapper> getMapper(uint8_t mapperID, std::vector<uint8_t>& PRG,
-		std::vector<uint8_t>& CHR, uint8_t prgRamSize);
+		std::vector<uint8_t>& CHR);
 
 	void setNametableMirroringType(NametableMirroringType type);
 };

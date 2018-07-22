@@ -5,7 +5,7 @@
 #include <string>
 
 std::unique_ptr<BaseMapper> BaseMapper::getMapper(uint8_t mapperID, std::vector<uint8_t>& PRG,
-	std::vector<uint8_t>& CHR, uint8_t prgRamSize) {
+	std::vector<uint8_t>& CHR) {
 
 	switch(mapperID) {
 	case 0x00:
