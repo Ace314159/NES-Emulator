@@ -1,12 +1,16 @@
-#include <stdexcept>
-
 #include "iNESHeader.h"
+
+#include <stdexcept>
+#include <iostream>
 
 
 void iNESHeader::parse() {
 	// NES0x1A in ASCII is flipped for endiannes
-	if(this->NES != 0x1A53454E || this->_0.z1 != 0 || this->_0.z2 != 0)
+	if(this->NES != 0x1A53454E || this->_0.z1 != 0 || this->_0.z2 != 0) {
+		std::cout << "NES is " << (int)this->NES << std::endl;
+		std::cout << "0 is " << (int)this->_0.z1 << (int)this->_0.z2 << std::endl;
 		throw std::runtime_error("Corrupted ROM!");
+	}
 
 	bool fourScreenVRAM = (this->flag6 >> 3) & 0x1;
 	bool isVerticalMirroring = this->flag6 & 0x1;
