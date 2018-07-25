@@ -1,8 +1,5 @@
 #pragma once
 
-#include <cstdint>
-#include <array>
-
 
 struct iNESHeader {
 	// Found in ROM

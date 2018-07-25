@@ -1,8 +1,7 @@
+#include "stdafx.h"
 #include "baseMapper.h"
 #include "nrom.h"
 #include "mmc1.h"
-
-#include <string>
 
 
 BaseMapper::BaseMapper(iNESHeader header) : header(header) {

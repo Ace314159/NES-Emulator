@@ -3,9 +3,6 @@
 #include "cpu/cpu.h"
 #include "ppu/ppu.h"
 
-#include <string>
-#include <chrono>
-
 
 class NES {
 private:

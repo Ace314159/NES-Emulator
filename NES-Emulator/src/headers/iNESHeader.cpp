@@ -1,8 +1,5 @@
+#include "stdafx.h"
 #include "iNESHeader.h"
-
-#include <stdexcept>
-#include <iostream>
-#include <algorithm>
 
 
 void iNESHeader::init(std::array<uint8_t, 16>& headerData) {

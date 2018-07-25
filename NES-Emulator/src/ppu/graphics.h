@@ -1,10 +1,7 @@
 #pragma once
 
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#include "stdafx.h"
 
-#include <array>
-#include <stdexcept>
 
 namespace Graphics {
 	const int width = 256;

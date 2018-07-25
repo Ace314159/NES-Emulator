@@ -2,6 +2,7 @@
 
 #include "baseMapper.h"
 
+
 class NROM : public BaseMapper {
 private:
 	std::array<uint8_t, 0x2000> prgRam;

@@ -1,12 +1,6 @@
+#include "stdafx.h"
 #include "ppu.h"
 
-#include <iostream>
-#include <fstream>
-
-#include <cassert>
-
-using std::cout;
-using std::endl;
 
 PPU::PPU(Memory& m) : mem(m) { this->initPaletteTable("../res/Nintendulator-NTSC.pal"); }
 
@@ -203,7 +197,7 @@ void PPU::renderDot() {
 
 	// TODO: Add emphasis based on PPU MASK
 	int index = ((Graphics::height-1 - this->scanlineNum) * (Graphics::width)*3) + (3*(this->cycleNum-1));
-	std::copy(&color.R, &color.B+1, &Graphics::screenTexPixels[index]);
+	memcpy(&Graphics::screenTexPixels[index], &color, 3);
 }
 
 void PPU::fetchBGData() {
@@ -380,14 +374,12 @@ PPU::Color PPU::getSpriteColor(uint8_t paletteNum, uint8_t colorNum) {
 }
 
 void PPU::initPaletteTable(std::string paletteFile) {
-	std::basic_ifstream<uint8_t> paletteData(paletteFile, std::ios::binary);
+	std::basic_ifstream<GLubyte> paletteData(paletteFile, std::ios::binary);
 	if(!paletteData.good()) {
 		throw std::runtime_error("Could not read palette table file");
 	}
 
-	uint8_t buffer[3];
 	for(size_t i = 0; i < this->paletteTable.max_size(); i++) {
-		paletteData.read(buffer, 3);
-		std::copy(&buffer[0], &buffer[2]+1, reinterpret_cast<uint8_t*>(&this->paletteTable[i]));
+		paletteData.read(&this->paletteTable[i].R, 3);
 	}
 }

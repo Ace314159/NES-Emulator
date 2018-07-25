@@ -1,7 +1,6 @@
+#include "stdafx.h"
 #include "graphics.h"
-#include "../memory/memory.h"
-
-#include <iostream>
+#include "memory/memory.h"
 
 using std::cout;
 using std::endl;

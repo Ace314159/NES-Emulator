@@ -1,11 +1,5 @@
+#include "stdafx.h"
 #include "cpu.h"
-
-#include <iostream>
-using std::cout;
-using std::endl;
-#include <stdio.h>
-#include <GLFW/glfw3.h>
-
 
 CPU::CPU(Memory& m, int& cyc, int& scan) : mem(m), CYC(cyc), SL(scan) {}
 

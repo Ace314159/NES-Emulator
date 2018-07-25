@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "mmc1.h"
 
 MMC1::MMC1(iNESHeader header, std::vector<uint8_t>& PRG, std::vector<uint8_t>& CHR) : BaseMapper(header) {

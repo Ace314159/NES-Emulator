@@ -1,9 +1,6 @@
 #pragma once
 
-#include "mappers\baseMapper.h"
-
-#include <array>
-#include <cstdint>
+#include "mappers/baseMapper.h"
 
 
 class Memory {

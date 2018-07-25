@@ -1,24 +1,13 @@
 // Ricoh 2C02 - NTSC Version
 #pragma once
 
-#include "../memory/memory.h"
+#include "memory/memory.h"
 #include "graphics.h"
 
 class PPU {
 public:
-	//class Memory {
-	//public:
-	//	enum class NametableMirroringType { HORIZONTAL, VERTICAL, ONE, FOUR };
-
-	//	NametableMirroringType nametableMirroringType;
-	//	std::array<uint8_t, 0x3F20> arr = {};
-	//	inline uint16_t getAddr(uint16_t addr);
-	//	inline uint8_t get8(uint16_t addr);
-	//	inline void set8(uint16_t addr, uint8_t data);
-	//};
-
 	struct Color {
-		uint8_t R, G, B;
+		GLubyte R, G, B;
 	};
 
 	PPU(Memory& m);

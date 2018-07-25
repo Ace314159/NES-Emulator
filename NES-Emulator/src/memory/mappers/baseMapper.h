@@ -1,14 +1,6 @@
 #pragma once
 
-#include "../../headers/iNESHeader.h"
-
-#include <array>
-#include <vector>
-#include <memory>
-#include <iostream>
-
-using std::cout;
-using std::endl;
+#include "headers/iNESHeader.h"
 
 
 class BaseMapper {

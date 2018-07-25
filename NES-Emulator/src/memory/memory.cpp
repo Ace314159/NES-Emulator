@@ -1,9 +1,6 @@
+#include "stdafx.h"
 #include "memory.h"
 
-#include <iostream>
-
-using std::cout;
-using std::endl;
 
 Memory::Memory(uint16_t& cu, int& scan, int& cyc) : currentVramAddr(cu), scanlineNum(scan), cycleNum(cyc) { }
 

@@ -1,40 +1,11 @@
 // Ricoh 2A03 (MOS 6502 without decimal mode) @ 1.79 MHz in NTSC (1.66 MHz in PAL)
 #pragma once
 
-#include "../memory/memory.h"
-
-#include <cstdint>
-#include <bitset>
-#include <functional>
-#include <array>
-#include <stack>
+#include "memory/memory.h"
 
 
 class CPU {
 public:
-	//class Memory {
-	//public:
-	//	Memory(bool& c, int& s);
-
-	//	std::array<uint8_t, 0x10000> arr = {};
-	//	std::reference_wrapper<uint8_t> get8(uint16_t addr);
-	//	uint16_t get16(uint16_t addr);
-	//	void set8(uint16_t addr, uint8_t data);
-	//	std::array<uint8_t, 8> buttons1 = {};
-	//	int buttons1Index = 0;
-	//	std::array<uint8_t, 8> buttons2 = {};
-	//	int buttons2Index = 0;
-
-	//	// PPU Related 
-	//	uint8_t ppuBus = 0;
-	//	uint16_t ppuRegisterRead = 0;
-	//	uint16_t ppuRegisterWritten = 0;
-	//	uint8_t ppuDataReadBuffer;
-	//	bool ppuDataReadBufferValid = false;
-	//	bool& ppuCanWrite;
-	//	int& ppuScanlineNum;
-	//};
-
 	class StatusRegister {
 	public:
 		std::bitset<8> byte{0x24};

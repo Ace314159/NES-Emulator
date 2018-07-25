@@ -1,13 +1,6 @@
+#include "stdafx.h"
 #include "nes.h"
 #include "memory/memory.h"
-
-#include <fstream>
-#include <iostream>
-#include <algorithm>
-#include <vector>
-
-using std::cout;
-using std::endl;
 
 NES::NES(const std::chrono::nanoseconds ct, std::string romFileName) : CLOCK_TIME(ct), ppu(loadRom(romFileName)) {}
 

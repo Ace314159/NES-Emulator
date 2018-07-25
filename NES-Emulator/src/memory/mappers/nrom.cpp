@@ -1,4 +1,6 @@
+#include "stdafx.h"
 #include "nrom.h"
+
 
 NROM::NROM(iNESHeader header, std::vector<uint8_t>& PRG, std::vector<uint8_t>& CHR) : BaseMapper(header) {
 	// If there is just 1 16K PRG Block, then it is mirrored to the next 16K, otherwise the next 16K is filled
