@@ -23,7 +23,7 @@ private:
 	uint8_t& getRAMLoc(uint16_t addr);
 	uint8_t& getVRAMLoc(uint16_t addr);
 public:
-	MMC1(std::vector<uint8_t>& PRG, std::vector<uint8_t>& CHR);
+	MMC1(iNESHeader header, std::vector<uint8_t>& PRG, std::vector<uint8_t>& CHR);
 
 	void setRAM8(uint16_t addr, uint8_t data) override;
 	uint8_t& getRAM8(uint16_t addr) override;

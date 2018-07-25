@@ -15,6 +15,8 @@ class BaseMapper {
 protected:
 	uint8_t temp; // A return value when no memory should be changed
 public:
+	BaseMapper(iNESHeader header);
+
 	// Nametable Mirroring - ONE_A is 0x2000 - 0x23FF and ONE_B is 0x2400 - 0x27FF
 	enum class NametableMirroringType { HORIZONTAL = 0, VERTICAL = 1, ONE_A = 2, ONE_B = 3, FOUR = 4};
 	NametableMirroringType nametableMirroringType;
@@ -36,8 +38,8 @@ public:
 	std::array<uint8_t, 0x1000> nametables;    // 0x2000 - 0x2FFF
 	std::array<uint8_t*, 0x1000> nametablePtrs;
 	std::array<uint8_t, 0x0020> palette{};     // 0x3F00 - 0x3F1F
-
-	static std::unique_ptr<BaseMapper> getMapper(uint8_t mapperID, std::vector<uint8_t>& PRG,
+	
+	static std::unique_ptr<BaseMapper> getMapper(iNESHeader header, std::vector<uint8_t>& PRG,
 		std::vector<uint8_t>& CHR);
 
 	void setNametableMirroringType(NametableMirroringType type);

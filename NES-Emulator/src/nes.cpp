@@ -38,9 +38,10 @@ Memory& NES::loadRom(std::string romFileName) {
 		throw std::runtime_error("Could not read ROM file");
 	}
 
+	std::array<uint8_t, 16> headerData;
+	romData.read(reinterpret_cast<uint8_t*>(&headerData), 16);
 	iNESHeader header;
-	romData.read(reinterpret_cast<uint8_t*>(&header), 16);
-	header.parse();
+	header.init(headerData);
 	romData.seekg(512 * header.containsTrainer, std::ios::cur);
 
 	// Initialize mapper
@@ -52,10 +53,7 @@ Memory& NES::loadRom(std::string romFileName) {
 	if(header.chrRomSize > 0) romData.read(&CHR[0], header.chrRomSize * 0x2000); // CHR
 
 	cout << "Using Mapper " << (int)header.mapperID << endl;
-	this->mem.mapper = BaseMapper::getMapper(header.mapperID, PRG, CHR);
-	this->mem.mapper->header = header;
-	this->mem.mapper->setNametableMirroringType(
-		static_cast<BaseMapper::NametableMirroringType>(header.nametableMirroringType));
+	this->mem.mapper = BaseMapper::getMapper(header, PRG, CHR);
 
 	// Set the PC to the memory address at the RESET vector location (0xFFFC/D)
 	this->cpu.PC = this->mem.mapper->getRAM8(0xFFFC) | (this->mem.mapper->getRAM8(0xFFFD) << 8);

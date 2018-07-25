@@ -1,12 +1,15 @@
 #include "mmc1.h"
 
-MMC1::MMC1(std::vector<uint8_t>& PRG, std::vector<uint8_t>& CHR) {
+MMC1::MMC1(iNESHeader header, std::vector<uint8_t>& PRG, std::vector<uint8_t>& CHR) : BaseMapper(header) {
 	this->prgRom = PRG;
 	this->CHR = CHR;
 }
 
 uint8_t& MMC1::getRAMLoc(uint16_t addr) {
-	if(addr < 0x8000) return this->prgRam[addr - 0x6000];
+	if(addr < 0x8000) {
+		if(!(this->PRGBank >> 4)) return this->prgRam[addr - 0x6000];
+		return temp;
+	}
 
 	uint8_t bankMode = (this->CTRL >> 2) & 0x3;
 	switch(bankMode) {

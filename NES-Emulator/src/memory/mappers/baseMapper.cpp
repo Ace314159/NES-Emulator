@@ -4,17 +4,24 @@
 
 #include <string>
 
-std::unique_ptr<BaseMapper> BaseMapper::getMapper(uint8_t mapperID, std::vector<uint8_t>& PRG,
+
+BaseMapper::BaseMapper(iNESHeader header) : header(header) {
+	auto type = static_cast<NametableMirroringType>(header.nametableMirroringType);
+	this->setNametableMirroringType(type);
+}
+
+std::unique_ptr<BaseMapper> BaseMapper::getMapper(iNESHeader header, std::vector<uint8_t>& PRG,
 	std::vector<uint8_t>& CHR) {
 
-	switch(mapperID) {
+	switch(header.mapperID) {
 	case 0x00:
-		return std::make_unique<NROM>(PRG, CHR);
+		return std::make_unique<NROM>(header, PRG, CHR);
 		break;
 	case 0x01:
-		return std::make_unique<MMC1>(PRG, CHR);
+		return std::make_unique<MMC1>(header, PRG, CHR);
+		break;
 	default:
-		throw std::runtime_error("Mapper " + std::to_string(mapperID) + " is not supported!");
+		throw std::runtime_error("Mapper " + std::to_string(header.mapperID) + " is not supported!");
 	}
 }
 
