@@ -332,7 +332,7 @@ void CPU::RMW(uint8_t result) {
 	}
 }
 
-void CPU::ADC() {
+void CPU::ADC() { // Change SBC if changing ADC
 	uint16_t result = this->A + mem.getRAM8(this->effectiveAddr) + this->P.C;
 	this->flagN(result & 0xff);
 	this->flagZ(result & 0xff);
@@ -782,10 +782,10 @@ void CPU::SAX() { // Undocumented
 	this->lastOperationCycle();
 }
 
-void CPU::SBC() { // ADC flipped data
-	mem.setRAM8(this->effectiveAddr, ~mem.getRAM8(this->effectiveAddr));
+void CPU::SBC() { // ADC with flipped data
+	mem.getRAMLoc(this->effectiveAddr) = ~mem.getRAMLoc(this->effectiveAddr);
 	this->ADC();
-	mem.setRAM8(this->effectiveAddr, ~mem.getRAM8(this->effectiveAddr)); // Flip data back to original
+	mem.getRAMLoc(this->effectiveAddr) = ~mem.getRAMLoc(this->effectiveAddr); // Flip data back to original
 }
 
 void CPU::SEC() {
