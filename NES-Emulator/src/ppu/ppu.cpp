@@ -6,8 +6,8 @@ PPU::PPU(Memory& m) : mem(m) { this->initPaletteTable("../res/Nintendulator-NTSC
 
 void PPU::emulateCycle(bool afterCPU) {
 	if(afterCPU) {
-		this->handleRegisterReads();
-		this->handleRegisterWrites();
+		if(this->registerRead) this->handleRegisterReads();
+		if(this->registerWritten) this->handleRegisterWrites();
 
 		// Checks if an NMI should occur
 		if((this->STATUS >> 7) & (this->CTRL >> 7)) {
