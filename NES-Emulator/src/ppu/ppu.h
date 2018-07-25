@@ -11,7 +11,7 @@ public:
 	};
 
 	PPU(Memory& m);
-	std::array<Color, 0xFF> paletteTable; // Not part of RAM
+	std::array<Color, 0xFF> paletteTable{}; // Not part of RAM
 
 	Memory& mem;
 
