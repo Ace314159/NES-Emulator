@@ -16,10 +16,8 @@ NROM::NROM(iNESHeader header, std::vector<uint8_t>& PRG, std::vector<uint8_t>& C
 void NROM::setRAM8(uint16_t addr, uint8_t data) {
 	if(addr < 0x6000) return;
 	if(addr < 0x8000) this->prgRam[addr - 0x6000] = data;
-	else {
-		assert(0); // Should never edit ROM
-		this->prgRom[addr - 0x8000] = data;
-	}
+	else cout << "Tried to edit PRG ROM!" << endl;
+		//this->prgRom[addr - 0x8000] = data;
 }
 
 
@@ -30,8 +28,8 @@ uint8_t& NROM::getRAM8(uint16_t addr) {
 }
 
 void NROM::setVRAM8(uint16_t addr, uint8_t data) {
-	assert(0); // Should never edit ROM
-	this->CHR[addr] = data;
+	cout << "Tried to edit CHR!" << endl;
+	//this->CHR[addr] = data;
 }
 
 uint8_t& NROM::getVRAM8(uint16_t addr) {

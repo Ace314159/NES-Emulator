@@ -379,7 +379,8 @@ void PPU::initPaletteTable(std::string paletteFile) {
 		throw std::runtime_error("Could not read palette table file");
 	}
 
-	for(size_t i = 0; i < this->paletteTable.max_size(); i++) {
-		paletteData.read(&this->paletteTable[i].R, 3);
+	paletteData.read(&this->paletteTable[0].R, 0x40 * 3);
+	for(size_t i = 0x40; i < 0xFF; i++) {
+		this->paletteTable[i] = {0, 0, 0};
 	}
 }

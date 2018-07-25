@@ -88,6 +88,7 @@ void Memory::setRAM8(uint16_t addr, uint8_t data) {
 
 // PPU
 uint8_t& Memory::getVRAMLoc(uint16_t& addr) {
+	addr %= 0x4000;
 	// Pattern Tables
 	if(addr < 0x2000) return this->mapper->getVRAM8(addr);
 
