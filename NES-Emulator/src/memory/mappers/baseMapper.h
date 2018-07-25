@@ -31,8 +31,8 @@ public:
 	std::array<uint8_t*, 0x1000> nametablePtrs;
 	std::array<uint8_t, 0x0020> palette{};      // 0x3F00 - 0x3F1F
 	
-	static std::unique_ptr<BaseMapper> getMapper(iNESHeader header, std::vector<uint8_t>& PRG,
-		std::vector<uint8_t>& CHR);
+	static std::unique_ptr<BaseMapper> getMapper(iNESHeader header, PRGBank& PRG,
+		CHRBank& CHR);
 
 	void setNametableMirroringType(NametableMirroringType type);
 };

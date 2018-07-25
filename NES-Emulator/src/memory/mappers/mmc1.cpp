@@ -1,45 +1,56 @@
 #include "stdafx.h"
 #include "mmc1.h"
 
-MMC1::MMC1(iNESHeader header, std::vector<uint8_t>& PRG, std::vector<uint8_t>& CHR) : BaseMapper(header) {
-	this->prgRom = PRG;
-	this->CHR = CHR;
-}
+MMC1::MMC1(iNESHeader header, PRGBank& PRG, CHRBank& CHR) : BaseMapper(header), 
+prgRom(PRG), CHR(CHR)  {}
 
 uint8_t& MMC1::getRAMLoc(uint16_t addr) {
 	if(addr < 0x8000) {
-		if(!(this->PRGBank >> 4)) return this->prgRam[addr - 0x6000];
+		if(!(this->PRGBankReg >> 4)) return this->prgRam[addr - 0x6000];
 		return temp;
 	}
 
 	uint8_t bankMode = (this->CTRL >> 2) & 0x3;
+	uint8_t bank;
 	switch(bankMode) {
 	case 0:
 	case 1:
-		addr += (this->PRGBank & 0x1E) * 0x8000;
+		bank = this->PRGBankReg & 0x1E;
 		break;
 	case 2:
-		if(addr > 0xC000) addr += this->PRGBank * 0x4000;
-		// 0x8000 - 0xC000 is fixed to first bank
+		if(addr >= 0xC000) {
+			bank = this->PRGBankReg;
+			addr -= 0xC000;
+		}
+		else {
+			bank = 0;
+			addr -= 0x8000;
+		}
 		break;
 	case 3:
-		if(addr < 0xC000) addr += this->PRGBank * 0x4000;
-		else addr += (this->header.prgRomSize - 2) * 0x4000;
+		if(addr < 0xC000) {
+			bank = this->PRGBankReg;
+			addr -= 0x8000;
+		} else {
+			bank = this->header.prgRomSize - 1;
+			addr -= 0xC000;
+		}
 		break;
 	}
-	return this->prgRom[addr - 0x8000];
+	return this->prgRom[bank][addr];
 }
 
 uint8_t& MMC1::getVRAMLoc(uint16_t addr) {
 	bool is4K = this->CTRL >> 4;
+	uint8_t bank;
 	if(is4K) {
-		if(addr < 0x1000) addr += this->CHRBank0 * 0x1000;
-		else addr += this->CHRBank1 * 0x1000;
+		if(addr < 0x1000) bank = this->CHRBank0;
+		else bank = this->CHRBank1;
 	} else {
-		addr += (this->CHRBank0 & 0x1E) * 0x2000;
+		bank = this->CHRBank0 & 0x1E;
 	}
 	
-	return CHR[addr];
+	return CHR[bank][addr];
 }
 
 void MMC1::setRAM8(uint16_t addr, uint8_t data) {
@@ -75,7 +86,7 @@ void MMC1::setRAM8(uint16_t addr, uint8_t data) {
 				}
 				else if(addr < 0xC000) this->CHRBank0 = this->shiftReg;
 				else if(addr < 0xE000) this->CHRBank1 = this->shiftReg;
-				else this->PRGBank = this->shiftReg;
+				else this->PRGBankReg = this->shiftReg;
 				
 				this->shiftReg = 0;
 				this->shiftRegCount = 0;

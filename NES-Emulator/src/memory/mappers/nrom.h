@@ -9,7 +9,7 @@ private:
 	std::array<uint8_t, 0x8000> prgRom;
 	std::array<uint8_t, 0x2000> CHR;
 public:
-	NROM(iNESHeader header, std::vector<uint8_t>& PRG, std::vector<uint8_t>& CHR);
+	NROM(iNESHeader header, PRGBank& PRG, CHRBank& CHR);
 
 	void setRAM8(uint16_t addr, uint8_t data) override;
 	uint8_t& getRAM8(uint16_t addr) override;

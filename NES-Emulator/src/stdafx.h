@@ -17,3 +17,6 @@
 
 using std::cout;
 using std::endl;
+
+typedef std::vector<std::array<uint8_t, 0x4000>> PRGBank;
+typedef std::vector<std::array<uint8_t, 0x2000>> CHRBank;

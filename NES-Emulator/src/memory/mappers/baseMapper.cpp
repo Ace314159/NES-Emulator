@@ -9,8 +9,8 @@ BaseMapper::BaseMapper(iNESHeader header) : header(header) {
 	this->setNametableMirroringType(type);
 }
 
-std::unique_ptr<BaseMapper> BaseMapper::getMapper(iNESHeader header, std::vector<uint8_t>& PRG,
-	std::vector<uint8_t>& CHR) {
+std::unique_ptr<BaseMapper> BaseMapper::getMapper(iNESHeader header, PRGBank& PRG,
+	CHRBank& CHR) {
 
 	switch(header.mapperID) {
 	case 0x00:

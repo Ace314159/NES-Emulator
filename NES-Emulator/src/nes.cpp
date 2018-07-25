@@ -38,12 +38,13 @@ Memory& NES::loadRom(std::string romFileName) {
 	romData.seekg(512 * header.containsTrainer, std::ios::cur);
 
 	// Initialize mapper
-	std::vector<uint8_t> PRG, CHR;
-	PRG.resize(header.prgRomSize * 0x4000);
-	if(header.chrRomSize > 0) CHR.resize(header.chrRomSize * 0x2000);
-	else CHR.resize(0x2000); // Otherwise initializes 8K of CHR RAM
-	romData.read(&PRG[0], header.prgRomSize * 0x4000); // PRG
-	if(header.chrRomSize > 0) romData.read(&CHR[0], header.chrRomSize * 0x2000); // CHR
+	PRGBank PRG;
+	CHRBank CHR;
+	PRG.resize(header.prgRomSize);
+	if(header.chrRomSize > 0) CHR.resize(header.chrRomSize);
+	else CHR.resize(1); // Otherwise initializes 8K of CHR RAM
+	romData.read(&PRG[0][0], header.prgRomSize * 0x4000); // PRG
+	if(header.chrRomSize > 0) romData.read(&CHR[0][0], header.chrRomSize * 0x2000); // CHR
 
 	cout << "Using Mapper " << (int)header.mapperID << endl;
 	this->mem.mapper = BaseMapper::getMapper(header, PRG, CHR);

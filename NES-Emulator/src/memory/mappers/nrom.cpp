@@ -2,15 +2,17 @@
 #include "nrom.h"
 
 
-NROM::NROM(iNESHeader header, std::vector<uint8_t>& PRG, std::vector<uint8_t>& CHR) : BaseMapper(header) {
+NROM::NROM(iNESHeader header, PRGBank& PRG, CHRBank& CHR) : BaseMapper(header) {
 	// If there is just 1 16K PRG Block, then it is mirrored to the next 16K, otherwise the next 16K is filled
 	// with the next part of the ROM
-	std::copy(PRG.begin(), PRG.end(), this->prgRom.begin());
+		std::copy(PRG[0].begin(), PRG[0].end(), this->prgRom.begin());
 	if(this->header.prgRomSize == 1) {
-		std::copy(PRG.begin(), PRG.end(), this->prgRom.begin() + 0x4000);
+		std::copy(this->prgRom.begin(), this->prgRom.end(), this->prgRom.begin() + 0x4000);
+	} else {
+		std::copy(PRG[1].begin(), PRG[1].end(), this->prgRom.begin() + 0x4000);
 	}
 
-	std::copy(CHR.begin(), CHR.end(), this->CHR.begin());
+	this->CHR = CHR[0];
 }
 
 void NROM::setRAM8(uint16_t addr, uint8_t data) {
