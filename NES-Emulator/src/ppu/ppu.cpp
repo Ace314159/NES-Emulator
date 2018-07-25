@@ -3,8 +3,7 @@
 #include <iostream>
 #include <fstream>
 
-#include <io.h>
-#include <fcntl.h>
+#include <cassert>
 
 using std::cout;
 using std::endl;
@@ -198,16 +197,13 @@ void PPU::renderDot() {
 		if(this->chosenSpritePixelIndex == 0 && this->sprite0IsInSOAM && spriteColorNum != 0 && bgColorNum != 0 &&
 			!this->sprite0Hit && this->cycleNum != 255 + 1) {
 			this->sprite0Hit = true;
-			// exit(0);
 			this->STATUS |= (1 << 6); // Sets bit 6 or Sprite 0 Hit
 		}
 	}
 
 	// TODO: Add emphasis based on PPU MASK
 	int index = ((Graphics::height-1 - this->scanlineNum) * (Graphics::width)*3) + (3*(this->cycleNum-1));
-	Graphics::screenTexPixels[index]     = color.R;
-	Graphics::screenTexPixels[index + 1] = color.G;
-	Graphics::screenTexPixels[index + 2] = color.B;
+	std::copy(&color.R, &color.B+1, &Graphics::screenTexPixels[index]);
 }
 
 void PPU::fetchBGData() {
@@ -378,7 +374,7 @@ PPU::Color PPU::getBGColor(uint8_t paletteNum, uint8_t colorNum) {
 }
 
 PPU::Color PPU::getSpriteColor(uint8_t paletteNum, uint8_t colorNum) {
-	if(colorNum == 0) throw std::runtime_error("Sprite Color was 0");
+	assert(colorNum != 0);
 	uint8_t color = mem.getVRAM8(0x3F10 | (paletteNum << 2) | colorNum);
 	return this->paletteTable[color];
 }
@@ -392,6 +388,6 @@ void PPU::initPaletteTable(std::string paletteFile) {
 	uint8_t buffer[3];
 	for(size_t i = 0; i < this->paletteTable.max_size(); i++) {
 		paletteData.read(buffer, 3);
-		this->paletteTable[i] = {buffer[0], buffer[1], buffer[2]};
+		std::copy(&buffer[0], &buffer[2]+1, reinterpret_cast<uint8_t*>(&this->paletteTable[i]));
 	}
 }
