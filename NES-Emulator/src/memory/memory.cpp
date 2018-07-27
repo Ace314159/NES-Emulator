@@ -50,6 +50,7 @@ uint8_t Memory::getRAM8(uint16_t addr) {
 		}
 		assert(addr == 0x2004);
 		// this->ppuMem.registerRead = 0x2004; - Nothing happens anyway
+		if(this->cycleNum >= 1 && this->cycleNum <= 65) return 0xFF;
 		return this->OAM[this->ppuRegisters[0x3]]; // Gets OAM data at OAMADDR
 	}
 	else if(addr == 0x4014) return this->cpuPpuBus; // PPU Write Only Register

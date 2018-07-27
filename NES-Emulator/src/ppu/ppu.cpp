@@ -119,7 +119,7 @@ void PPU::emulateDot() {
 
 		if(this->cycleNum <= 256 || this->cycleNum > 320) {
 			this->fetchBGData();
-			if(this->cycleNum >= 65 && this->cycleNum <= 256 && this->scanlineNum != -1) this->evaluateSprites();
+			if(this->cycleNum > 64 && this->cycleNum <= 256 && this->scanlineNum != -1) this->evaluateSprites();
 			if(this->scanlineNum != -1 && this->cycleNum <= 256) this->renderDot();
 			if(this->cycleNum >= 2 && this->cycleNum <= 257 || this->cycleNum >= 322 && this->cycleNum <= 337) {
 				this->lowBGShiftReg <<= 1;
@@ -182,9 +182,9 @@ void PPU::renderDot() {
 		// Sprite Data
 		uint8_t spritePaletteNum = this->spriteAttrs[this->chosenSpritePixelIndex] & 0x3;
 		uint8_t spriteColorNum = this->chosenSpritePixelColor;
-		bool spritePriorityIs1 = (this->spriteAttrs[this->chosenSpritePixelIndex] >> 5) & 0x1;
-		if(spritePriorityIs1 || spriteColorNum == 0) color = this->getBGColor(bgPaletteNum, bgColorNum);
-		else color = this->getSpriteColor(spritePaletteNum, spriteColorNum);
+		bool spriteIsBehindBG = (this->spriteAttrs[this->chosenSpritePixelIndex] >> 5) & 0x1;
+		if(bgColorNum == 0 || !spriteIsBehindBG) color = this->getSpriteColor(spritePaletteNum, spriteColorNum);
+		else color = this->getBGColor(bgPaletteNum, bgColorNum);
 		if(this->chosenSpritePixelIndex == 0 && this->sprite0IsInSOAM && spriteColorNum != 0 && bgColorNum != 0 &&
 			!this->sprite0Hit && this->cycleNum != 255 + 1) {
 			this->sprite0Hit = true;
@@ -243,7 +243,7 @@ void PPU::evaluateSprites() { // Sprite Evaluation
 	if(this->spritesFound < 8 && !this->spriteEvaluationDone) {
 		if(this->cycleNum % 2 == 1) this->secondaryOAMBuffer = this->mem.OAM[this->OAMADDR];
 		else {
-			uint8_t m = this->OAMADDR % 4;
+			uint8_t m = this->OAMADDR % 4; // TODO: Treat first OAMADDR as y coordinate, 
 			this->secondaryOAM[4 * this->spritesFound + m] = secondaryOAMBuffer;
 			// Increment OAMADDR when sprite is in range otherwise skip sprite
 			int diff = this->scanlineNum - secondaryOAMBuffer;  // Checks with Y only when m = 0
@@ -319,10 +319,10 @@ void PPU::selectSpritePixel() {
 			uint8_t highSpriteBit = (high >> 6) & 0x2;
 			uint8_t color = highSpriteBit | lowSpriteBit;
 			int priority = (this->spriteAttrs[i] >> 5) & 0x1;
-			int chosenPriority = 0;
+			int chosenPriority = 1; // 0 is in front of BG, 1 is behind BG
 			if(this->chosenSpritePixelIndex != -1)
 				chosenPriority = (this->spriteAttrs[this->chosenSpritePixelIndex] >> 5) & 0x1;
-			if((this->chosenSpritePixelIndex == -1 || priority > chosenPriority) && color != 0) {
+			if((this->chosenSpritePixelIndex == -1 || priority < chosenPriority) && color != 0) {
 				this->chosenSpritePixelIndex = i;
 				this->chosenSpritePixelColor = color;
 			}
