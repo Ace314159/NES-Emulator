@@ -5,6 +5,8 @@
 PPU::PPU(Memory& m) : mem(m) { this->initPaletteTable("../res/Nintendulator-NTSC.pal"); }
 
 void PPU::emulateCycle(bool afterCPU) {
+	this->emulateDot();
+
 	if(afterCPU) {
 		if(this->registerRead) this->handleRegisterReads();
 		if(this->registerWritten) this->handleRegisterWrites();
@@ -20,8 +22,6 @@ void PPU::emulateCycle(bool afterCPU) {
 			this->mem.OAM[(this->OAMDMAStartAddr + ((mem.DMAAddr - 1) & 0xff)) % 256] = this->mem.DMAVal;
 		}
 	}
-
-	this->emulateDot();
 }
 
 void PPU::handleRegisterReads() {
@@ -52,6 +52,7 @@ void PPU::handleRegisterWrites() {
 		break;
 	case 0x2004: // OAM DATA
 		this->mem.OAM[this->OAMADDR++] = this->OAMDATA;
+		this->OAMADDR %= 0x100;
 		break;
 	case 0x2005: // SCROLL
 		if(this->onSecondWrite) {
@@ -94,17 +95,14 @@ void PPU::handleRegisterWrites() {
 }
 
 void PPU::emulateDot() {
-	if(this->scanlineNum == 0 && this->cycleNum == 0 && !this->oddFrame && this->isRendering()) {
-		this->cycleNum++;
-	} else if(this->cycleNum == 0) {
+	if(this->cycleNum == 0) { // Idle
 		this->cycleNum++;
 		return;
 	} else if(this->scanlineNum == -1) { // Pre-render Scanline
 		if(this->cycleNum == 1) {
 			this->STATUS &= ~(0b111 << 5); // Clear VBlank, Sprite 0, and Sprite Overflow
 			this->sprite0IsInSOAM = this->sprite0Hit = false;
-		}
-		else if(this->isRendering() && this->cycleNum >= 280 && this->cycleNum <= 304) {
+		} else if(this->isRendering() && this->cycleNum >= 280 && this->cycleNum <= 304) {
 			// vert(v) = vert(t)
 			this->currentVramAddr = (this->currentVramAddr & ~0x7BE0) | (this->tempVramAddr & 0x7BE0);
 		}
@@ -136,15 +134,14 @@ void PPU::emulateDot() {
 			this->fetchSpriteData();
 		if(this->cycleNum == 257) // hori(v) = hori(t)
 			this->currentVramAddr = (this->currentVramAddr & ~0x41F) | (this->tempVramAddr & 0x41F);
-
-
 	} else if(this->scanlineNum == 241 && this->cycleNum == 1) {
 		this->STATUS |= (1 << 7); // Set VBlank flag
 		Graphics::renderScreen();
-	}
+	} else if(this->scanlineNum < 240 && this->scanlineNum != -1 && this->cycleNum <= 256)
+		this->setDot(this->getBGColor(0, 0));
 
 	// Skip one cycle if odd frame and is rendering
-	if(this->oddFrame && this->cycleNum == 339 && this->scanlineNum == -1 && this->isRendering()) this->cycleNum++;
+	if(this->cycleNum == 338 && this->scanlineNum == -1 && this->isRenderingBG() && oddFrame) this->cycleNum++;
 	if(this->cycleNum == 340) this->scanlineNum = ((this->scanlineNum + 1+1) % (261+1))-1;
 	this->cycleNum = (this->cycleNum + 1) % 341;
 	if(this->scanlineNum == -1 && this->cycleNum == 0) this->oddFrame = !this->oddFrame;
@@ -178,7 +175,7 @@ void PPU::renderDot() {
 	uint8_t bgColorNum = (highBGBit << 1) | lowBGBit;
 	if(!(this->isRenderingBG() && (((this->MASK >> 1) & 0x1) || this->cycleNum > 8))) bgColorNum = 0;
 	// Priority Multiplexer Decision
-	Color color;
+	uint8_t color;
 	if(this->chosenSpritePixelIndex == -1) {
 		color = this->getBGColor(bgPaletteNum, bgColorNum);
 	} else {
@@ -195,9 +192,16 @@ void PPU::renderDot() {
 		}
 	}
 
+	this->setDot(color);
+}
+
+void PPU::setDot(uint8_t color) {
 	// TODO: Add emphasis based on PPU MASK
+	if(this->MASK & 0x1) color &= 0x30;
+	Color rgbColor = this->paletteTable[color];
+
 	int index = ((Graphics::height-1 - this->scanlineNum) * (Graphics::width)*3) + (3*(this->cycleNum-1));
-	memcpy(&Graphics::screenTexPixels[index], &color, 3);
+	memcpy(&Graphics::screenTexPixels[index], &rgbColor, 3);
 }
 
 void PPU::fetchBGData() {
@@ -354,7 +358,7 @@ void PPU::incrementScrollY() {
 	}
 }
 
-PPU::Color PPU::getBGColor(uint8_t paletteNum, uint8_t colorNum) {
+uint8_t PPU::getBGColor(uint8_t paletteNum, uint8_t colorNum) {
 	uint8_t color;
 	if(this->isRenderingBG()) {
 		if(colorNum == 0) color = mem.getVRAM8(0x3F00);
@@ -364,13 +368,13 @@ PPU::Color PPU::getBGColor(uint8_t paletteNum, uint8_t colorNum) {
 			color = mem.getVRAM8(this->currentVramAddr);
 		color = mem.getVRAM8(0x3F00);
 	}
-	return this->paletteTable[color];
+	return color;
 }
 
-PPU::Color PPU::getSpriteColor(uint8_t paletteNum, uint8_t colorNum) {
+uint8_t PPU::getSpriteColor(uint8_t paletteNum, uint8_t colorNum) {
 	assert(colorNum != 0);
 	uint8_t color = mem.getVRAM8(0x3F10 | (paletteNum << 2) | colorNum);
-	return this->paletteTable[color];
+	return color;
 }
 
 void PPU::initPaletteTable(std::string paletteFile) {

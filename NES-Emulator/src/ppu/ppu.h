@@ -74,19 +74,20 @@ public:
 	void emulateDot();
 
 	// Useful Functions
-	inline bool isRenderingBG();
-	inline bool isRenderingSprites();
-	inline bool isRendering();
-	inline void renderDot();
-	inline void fetchBGData();
-	inline void evaluateSprites();
-	inline void fetchSpriteData();
-	inline void selectSpritePixel();
-	inline void incrementScrollX();
-	inline void incrementScrollY();
-	inline Color getBGColor(uint8_t paletteNum, uint8_t colorNum);
-	inline Color getSpriteColor(uint8_t paletteNum, uint8_t colorNum);
-	inline void initPaletteTable(std::string paletteFile);
+	bool isRenderingBG();
+	bool isRenderingSprites();
+	bool isRendering();
+	void renderDot();
+	void setDot(uint8_t color);
+	void fetchBGData();
+	void evaluateSprites();
+	void fetchSpriteData();
+	void selectSpritePixel();
+	void incrementScrollX();
+	void incrementScrollY();
+	uint8_t getBGColor(uint8_t paletteNum, uint8_t colorNum);
+	uint8_t getSpriteColor(uint8_t paletteNum, uint8_t colorNum);
+	void initPaletteTable(std::string paletteFile);
 
 	// Other
 	const unsigned char BitReverseTable[256] = {
