@@ -33,9 +33,10 @@ public:
 	// Useful Variables
 	int& cycleNum; // CYC in CPU
 
-	// NMI and DMA
-	bool NMICalled = false;
-	bool inNMI = false;
+	// NMI
+	bool NMICalled = false; // PPU Request
+	bool inNMI = false; // CPU Response
+	// DMA
 	bool inDMA = false;
 	//bool DMACalled = false;
 	uint16_t DMAAddr;

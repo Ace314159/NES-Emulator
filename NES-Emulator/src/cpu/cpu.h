@@ -39,7 +39,6 @@ public:
 	uint8_t effectiveAddrLow; // Acts as the low bit for the Effective, Base, and Indirect Address
 	uint8_t effectiveAddrHigh;
 	uint16_t effectiveAddr; // Acts as the Effective, Base, and Indirect Address
-	//std::reference_wrapper<uint8_t> data = std::reference_wrapper<uint8_t>(this->mem.get8(0));
 	uint8_t dataV; // data that is not a reference (value), if data changes between cycles
 	uint8_t opcode;
 	bool onAccumulator = false;
@@ -54,8 +53,9 @@ public:
 	void unknownOpcode();
 	static void(CPU::*addressingModes[256])(uint8_t cycleNum);
 	static void(CPU::*operations[256])();
-	// std::function<void(uint8_t cycleNum)> getAddressingMode(uint8_t opcode);
-	// std::function<void()> getOperation(uint8_t opcode);
+
+	// Other
+	void OAMDMA();
 
 	void emulateCycle(); // Emulates a single clock cycle
 
@@ -83,7 +83,7 @@ public:
 	void stackPush(uint8_t data);
 	uint8_t stackPull();
 
-	// Operations - Most return a trash value
+	// Operations
 	void lastOperationCycle(); // Run on the last cycle
 	void interrupt(uint16_t vectorLocation);
 	void RMW(uint8_t result); // Read, Modify, Write Operations

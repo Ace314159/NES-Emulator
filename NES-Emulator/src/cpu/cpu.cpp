@@ -5,52 +5,49 @@ CPU::CPU(Memory& m, int& cyc, int& scan) : mem(m), CYC(cyc), SL(scan) {}
 
 
 void CPU::emulateCycle() {
-	//uint16_t oldPC = this->PC;
 	if(mem.inDMA) {
-		if((mem.DMAAddr >> 8) == mem.DMAPage) { // If DMAAdrr has not overflowed
-			if(!mem.inOddCycle && mem.DMAdoneDummy) { // Read cycles are even cycles
-				mem.DMAVal = mem.getRAM8(mem.DMAAddr++); // Incremented in PPU
-			}
-			mem.DMAdoneDummy = true;
-		} else {
-			mem.DMAdoneDummy = false;
-			mem.inDMA = false;
-		}
-		mem.inOddCycle = !mem.inOddCycle;
+		this->OAMDMA();
 		return;
 	}
 	
-	//try {
-		if(this->gotData) {
+	if(this->gotData) {
+		if(mem.inNMI) {
+			this->interrupt(0xFFFA);
+		} else {
+			(this->*(this->operations[this->opcode]))();
+		}
+	}
+	if(!this->gotData) { // gotData may change after the operation
+		if(this->cycleNum == 0) {
 			if(mem.inNMI) {
-				this->interrupt(0xFFFA);
+				this->opcode = 0x00; // BRK opcode
 			} else {
-				(this->*(this->operations[this->opcode]))();
+				this->opcode = mem.getRAM8(this->PC++);
+				/*printf("%04X  %02X    A:%02X X:%02X Y:%02X P:%02X SP:%02X CYC:%3d SL:%1d\n", PC - 1, opcode,
+					A, X, Y, P.byte.to_ulong(), S, CYC, SL);*/
 			}
+		} else {
+			(this->*(this->addressingModes[this->opcode]))(this->cycleNum);
 		}
-		if(!this->gotData) { // gotData may change after the operation
-			if(this->cycleNum == 0) {
-				if(mem.inNMI) {
-					this->opcode = 0x00; // BRK opcode
-				} else {
-					this->opcode = mem.getRAM8(this->PC++);
-					/*printf("%04X  %02X    A:%02X X:%02X Y:%02X P:%02X SP:%02X CYC:%3d SL:%1d\n", PC - 1, opcode,
-						A, X, Y, P.byte.to_ulong(), S, CYC, SL);*/
-				}
-			} else {
-				(this->*(this->addressingModes[this->opcode]))(this->cycleNum);
-			}
-		}
-	/*} catch(const char* e) {
-		if(strcmp(e, "DMA") == 0) {
-			this->PC = oldPC;
-			return;
-		}
-		throw e;
-	}*/
+	}
 
 	mem.inOddCycle = !mem.inOddCycle;
 	this->cycleNum++;
+}
+
+
+// DMAs
+void CPU::OAMDMA() {
+	if((this->mem.DMAAddr >> 8) == this->mem.DMAPage) { // If DMAAdrr has not overflowed
+		if(!this->mem.inOddCycle && this->mem.DMAdoneDummy) { // Read cycles are even cycles
+			this->mem.DMAVal = this->mem.getRAM8(mem.DMAAddr++); // Incremented in PPU
+		}
+		this->mem.DMAdoneDummy = true;
+	} else {
+		this->mem.DMAdoneDummy = false;
+		this->mem.inDMA = false;
+	}
+	this->mem.inOddCycle = !this->mem.inOddCycle;
 }
 
 
