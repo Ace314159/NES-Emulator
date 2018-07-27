@@ -4,36 +4,33 @@
 
 
 class BaseMapper {
-protected:
-	uint8_t temp; // A return value when no memory should be changed
 public:
 	BaseMapper(iNESHeader header);
 
-	// Nametable Mirroring - ONE_A is 0x2000 - 0x23FF and ONE_B is 0x2400 - 0x27FF
+	// Nametable Mirroring
 	enum class NametableMirroringType { HORIZONTAL = 0, VERTICAL = 1, ONE_A = 2, ONE_B = 3, FOUR = 4};
 	NametableMirroringType nametableMirroringType;
 
+	// VRAM
+	std::array<uint8_t, 0x1000> nametables;     // 0x2000 - 0x2FFF
+	std::array<uint8_t*, 0x1000> nametablePtrs; // 0x2000 - 0x2FFF
+	std::array<uint8_t, 0x0020> palette{};      // 0x3F00 - 0x3F1F
+
+	// Useful Variables
 	bool writeCycleDone = false;
 	iNESHeader header;
 
 
-	virtual void setRAM8(uint16_t addr, uint8_t data) = 0;
-	virtual uint8_t& getRAM8(uint16_t addr) = 0;
-	virtual void setVRAM8(uint16_t addr, uint8_t data) = 0;
-	virtual uint8_t& getVRAM8(uint16_t addr) = 0;
-
-	// RAM
-	std::array<uint8_t, 0x0800> internalRAM;    // 0x0000 - 0x07FF
-	std::array<uint8_t, 0x0008> ppuRegisters{}; // 0x2000 - 0x2007
-	std::array<uint8_t, 0x0018> apuRegisters;   // 0x4000 - 0x4017 - Not really APU registers, but almost all are
-	// VRAM
-	std::array<uint8_t, 0x1000> nametables;     // 0x2000 - 0x2FFF
-	std::array<uint8_t*, 0x1000> nametablePtrs;
-	std::array<uint8_t, 0x0020> palette{};      // 0x3F00 - 0x3F1F
+	// Useful Functions
+	virtual void wroteRAM8(uint16_t addr, uint8_t data) = 0;
+	virtual uint8_t getPRGBank(uint16_t& addr) = 0; // Is reference in order to offset addr when accessing PRG ROM
+	virtual uint16_t getPRGBankSize() = 0;
+	virtual uint8_t getCHRBank(uint16_t& addr) = 0; // Is reference in order to offset addr when accessing CHR
+	virtual uint16_t getCHRBankSize() = 0;
+	virtual bool WRAMEnabled() = 0;
 	
-	static std::unique_ptr<BaseMapper> getMapper(iNESHeader header, PRGBank& PRG,
-		CHRBank& CHR);
-
 	void setNametableMirroringType(NametableMirroringType type);
+	static std::unique_ptr<BaseMapper> getMapper(iNESHeader header);
+
 };
 

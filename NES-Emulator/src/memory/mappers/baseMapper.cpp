@@ -9,15 +9,14 @@ BaseMapper::BaseMapper(iNESHeader header) : header(header) {
 	this->setNametableMirroringType(type);
 }
 
-std::unique_ptr<BaseMapper> BaseMapper::getMapper(iNESHeader header, PRGBank& PRG,
-	CHRBank& CHR) {
+std::unique_ptr<BaseMapper> BaseMapper::getMapper(iNESHeader header) {
 
 	switch(header.mapperID) {
 	case 0x00:
-		return std::make_unique<NROM>(header, PRG, CHR);
+		return std::make_unique<NROM>(header);
 		break;
 	case 0x01:
-		return std::make_unique<MMC1>(header, PRG, CHR);
+		return std::make_unique<MMC1>(header);
 		break;
 	default:
 		throw std::runtime_error("Mapper " + std::to_string(header.mapperID) + " is not supported!");

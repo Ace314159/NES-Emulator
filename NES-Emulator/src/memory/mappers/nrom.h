@@ -4,16 +4,14 @@
 
 
 class NROM : public BaseMapper {
-private:
-	std::array<uint8_t, 0x2000> prgRam;
-	std::array<uint8_t, 0x8000> prgRom;
-	std::array<uint8_t, 0x2000> CHR;
 public:
-	NROM(iNESHeader header, PRGBank& PRG, CHRBank& CHR);
+	NROM(iNESHeader header) : BaseMapper(header) {};
 
-	void setRAM8(uint16_t addr, uint8_t data) override;
-	uint8_t& getRAM8(uint16_t addr) override;
-	void setVRAM8(uint16_t addr, uint8_t data) override;
-	uint8_t& getVRAM8(uint16_t addr) override;
+	void wroteRAM8(uint16_t addr, uint8_t data) override;
+	uint8_t getPRGBank(uint16_t& addr) override;
+	uint16_t getPRGBankSize() override;
+	uint8_t getCHRBank(uint16_t& addr) override;
+	uint16_t getCHRBankSize() override;
+	bool WRAMEnabled() override;
 };
 

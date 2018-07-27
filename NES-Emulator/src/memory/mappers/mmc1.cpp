@@ -1,65 +1,10 @@
 #include "stdafx.h"
 #include "mmc1.h"
 
-MMC1::MMC1(iNESHeader header, PRGBank& PRG, CHRBank& CHR) : BaseMapper(header), 
-prgRom(PRG), CHR(CHR)  {}
 
-uint8_t& MMC1::getRAMLoc(uint16_t addr) {
-	if(addr < 0x8000) {
-		if(!(this->PRGBankReg >> 4)) return this->prgRam[addr - 0x6000];
-		return temp;
-	}
-
-	uint8_t bankMode = (this->CTRL >> 2) & 0x3;
-	uint8_t bank;
-	switch(bankMode) {
-	case 0:
-	case 1:
-		bank = this->PRGBankReg & 0x1E;
-		break;
-	case 2:
-		if(addr >= 0xC000) {
-			bank = this->PRGBankReg;
-			addr -= 0xC000;
-		}
-		else {
-			bank = 0;
-			addr -= 0x8000;
-		}
-		break;
-	case 3:
-		if(addr < 0xC000) {
-			bank = this->PRGBankReg;
-			addr -= 0x8000;
-		} else {
-			bank = this->header.prgRomSize - 1;
-			addr -= 0xC000;
-		}
-		break;
-	}
-	return this->prgRom[bank][addr];
-}
-
-uint8_t& MMC1::getVRAMLoc(uint16_t addr) {
-	bool is4K = this->CTRL >> 4;
-	uint8_t bank;
-	if(is4K) {
-		if(addr < 0x1000) bank = this->CHRBank0;
-		else bank = this->CHRBank1;
-	} else {
-		bank = this->CHRBank0 & 0x1E;
-	}
-	
-	return CHR[bank][addr];
-}
-
-void MMC1::setRAM8(uint16_t addr, uint8_t data) {
-	if(addr < 0x6000) return;
-	this->getRAMLoc(addr) = data;
-
-	// Register Logic
+void MMC1::wroteRAM8(uint16_t addr, uint8_t data) {
 	if(addr >= 0x8000 && !this->writeCycleDone) {
-		if(addr >> 7) {
+		if(data >> 7) {
 			this->shiftRegCount = 0;
 			this->shiftReg = 0;
 		} else {
@@ -86,7 +31,7 @@ void MMC1::setRAM8(uint16_t addr, uint8_t data) {
 				}
 				else if(addr < 0xC000) this->CHRBank0 = this->shiftReg;
 				else if(addr < 0xE000) this->CHRBank1 = this->shiftReg;
-				else this->PRGBankReg = this->shiftReg;
+				else this->PRGBank = this->shiftReg;
 				
 				this->shiftReg = 0;
 				this->shiftRegCount = 0;
@@ -95,15 +40,44 @@ void MMC1::setRAM8(uint16_t addr, uint8_t data) {
 	}
 }
 
-uint8_t& MMC1::getRAM8(uint16_t addr) {
-	if(addr < 0x6000) return temp;
-	return this->getRAMLoc(addr);
+uint8_t MMC1::getPRGBank(uint16_t& addr) {
+	uint8_t bankMode = (this->CTRL >> 2) & 0x3;
+
+	if(bankMode < 2) {
+		addr -= 0x8000;
+		return this->PRGBank & 0x0E;
+	} else if(addr < 0xC000) {
+		addr -= 0x8000;
+		if(bankMode == 2) return 0;
+		else return this->PRGBank & 0x0F;
+	} else {
+		addr -= 0xC000;
+		if(bankMode == 2) return this->PRGBank & 0x0F;
+		else return this->header.prgRomSize - 1;
+	}
 }
 
-void MMC1::setVRAM8(uint16_t addr, uint8_t data) {
-	this->getVRAMLoc(addr) = data;
+uint16_t MMC1::getPRGBankSize() {
+	uint8_t bankMode = (this->CTRL >> 2) & 0x3;
+	if(bankMode < 2) return 0x8000;
+	else return 0x4000;
 }
 
-uint8_t& MMC1::getVRAM8(uint16_t addr) {
-	return this->getVRAMLoc(addr);
+uint8_t MMC1::getCHRBank(uint16_t& addr) {
+	if(this->getCHRBankSize() == 0x1000) {
+		if(addr < 0x1000) return this->CHRBank0;
+		else {
+			addr -= 0x1000;
+			return this->CHRBank1;
+		}
+	} else return this->CHRBank0 & 0x1E;
+}
+
+uint16_t MMC1::getCHRBankSize() {
+	if(this->CTRL >> 4) return 0x1000;
+	else return 0x2000;
+}
+
+bool MMC1::WRAMEnabled() {
+	return !(this->PRGBank >> 4);
 }

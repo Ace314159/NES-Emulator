@@ -8,7 +8,7 @@ class CPU {
 public:
 	class StatusRegister {
 	public:
-		std::bitset<8> byte{0x24};
+		std::bitset<8> byte{0x34};
 
 		std::bitset<8>::reference& N = byte[7]; // Negative
 		std::bitset<8>::reference& V = byte[6]; // Overflow

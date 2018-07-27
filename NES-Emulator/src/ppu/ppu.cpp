@@ -78,7 +78,7 @@ void PPU::handleRegisterWrites() {
 		this->onSecondWrite = !this->onSecondWrite;
 		break;
 	case 0x2007: // DATA
-		mem.setVRAM8(this->currentVramAddr++, this->DATA);
+		mem.setVRAM8(this->currentVramAddr++ & 0x3FFF, this->DATA);
 		this->currentVramAddr += ((this->CTRL >> 2) & 0x1) * 31; // Ads extra 31 if bit 2 is set
 		break;
 	case 0x4014: // OAM DMA
