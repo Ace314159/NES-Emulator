@@ -53,8 +53,14 @@ uint8_t Memory::getRAM8(uint16_t addr) {
 		return this->OAM[this->ppuRegisters[0x3]]; // Gets OAM data at OAMADDR
 	}
 	else if(addr == 0x4014) return this->cpuPpuBus; // PPU Write Only Register
-	else if(addr == 0x4016) return buttons1[buttons1Index++ % 8];
-	else if(addr == 0x4017) return buttons2[buttons2Index++ % 8];
+	else if(addr == 0x4016) {
+		if(this->buttons1Index < 8) return this->buttons1[this->buttons1Index++];
+		else return 0x1;
+	}
+	else if(addr == 0x4017) {
+		if(this->buttons2Index < 8) return this->buttons2[this->buttons2Index++];
+		else return 0x0;
+	}
 	return ramLoc;
 }
 

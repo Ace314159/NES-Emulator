@@ -25,10 +25,10 @@ public:
 	std::array<uint8_t, 0x0018> apuRegisters; // 0x4000 - 0x4017 - Not really APU registers, but almost all are
 
 	// Input
-	std::array<bool, 8> buttons1 = {};
-	int buttons1Index = 0;
-	std::array<bool, 8> buttons2 = {};
-	int buttons2Index = 0;
+	std::array<bool, 8> buttons1{};
+	uint8_t buttons1Index = 0;
+	std::array<bool, 8> buttons2{};
+	uint8_t buttons2Index = 0;
 
 	// Useful Variables
 	int& cycleNum; // CYC in CPU
