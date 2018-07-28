@@ -266,13 +266,13 @@ void PPU::fetchSpriteData() { // Sprite Fetches
 	int spriteNum = (this->cycleNum - 1) / 8 - 32;
 	if(spriteNum >= this->prevSpritesFound) return;
 	bool is8x16 = (this->CTRL >> 5) & 0x1;
-	uint16_t spritePage;
 	// isVerticallyFlipped is used before spriteAttrs is set, so get data from Secondary OAM
 	bool isVerticallyFlipped = (this->secondaryOAM[spriteNum * 4 + 2] >> 7) & 0x1;
 	uint8_t fineY = (this->scanlineNum - this->spriteY) & ~0x8;
 	if(isVerticallyFlipped) fineY = ~fineY & 0x7;
-	// For 8x16 sprites tileNum sets bit 0 for lower half, so spritePage is always 0x1000 for lower half
-	if(is8x16) spritePage = (this->prevTileNum & 0x1) << 12;
+	uint16_t spritePage;
+	// Use value from Secondary OAM instead of tileNum as bit 0 changes for top and bottom half
+	if(is8x16) spritePage = (this->secondaryOAM[spriteNum * 4 + 1] & 0x1) << 12;
 	else spritePage = (this->CTRL << 9) & 0x1000;
 
 	switch(this->cycleNum % 8) {
@@ -283,7 +283,7 @@ void PPU::fetchSpriteData() { // Sprite Fetches
 		if(is8x16) {
 			// Top Half
 			if((this->scanlineNum - this->spriteY < 8) != isVerticallyFlipped)
-				this->prevTileNum = this->tileNum = this->secondaryOAM[spriteNum * 4 + 1] & 0xFE;
+				this->tileNum = this->secondaryOAM[spriteNum * 4 + 1] & 0xFE;
 			else // Bottom Half
 				this->tileNum = this->secondaryOAM[spriteNum * 4 + 1] | 0x1;
 		} else this->tileNum = this->secondaryOAM[spriteNum * 4 + 1];
