@@ -38,7 +38,9 @@ void NES::loadRom(std::string romFileName) {
 	romData.seekg(512 * header.containsTrainer, std::ios::cur);
 
 	// Initialize mapper
+#ifdef _DEBUG
 	cout << "Using Mapper " << (int)header.mapperID << endl;
+#endif
 	this->mem.mapper = BaseMapper::getMapper(header);
 
 	this->mem.PRG.resize(header.prgRomSize * 0x4000);

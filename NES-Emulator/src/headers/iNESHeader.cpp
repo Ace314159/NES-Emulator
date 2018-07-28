@@ -15,10 +15,12 @@ void iNESHeader::init(std::array<uint8_t, 16>& headerData) {
 	this->z = &headerData[11];
 	// Verify if ROM is valid
 	if(!!memcmp(this->NES, "\x4E\x45\x53\x1A", 4) || !!memcmp(this->z, "\x0\x0\x0\x0\x0", 5)) {
+#ifdef _DEBUG
 		std::cout << "NES is " << this->NES << std::endl;
 		std::cout << "0 is ";
 		for(int i = 0; i < 5; i++) std::cout << (int)this->z[i] << " ";
 		std::cout << std::endl;
+#endif
 		throw std::runtime_error("Corrupted ROM!");
 	}
 	// Clear dangling pointers
@@ -38,5 +40,7 @@ void iNESHeader::init(std::array<uint8_t, 16>& headerData) {
 	this->isPC10 = (this->flag7 >> 1) & 0x1;
 	this->isNES2 = ((this->flag7 >> 2) & 0x3) == 2;
 
-	if(this->isNES2) throw std::runtime_error("Does not support NES 2.0");
+#ifdef _DEBUG
+	if(this->isNES2) cout << "Is NES 2.0 ROM";
+#endif
 }
