@@ -44,8 +44,8 @@ void NES::loadRom(std::string romFileName) {
 	this->mem.PRG.resize(header.prgRomSize * 0x4000);
 	if(header.chrRomSize > 0) this->mem.CHR.resize(header.chrRomSize * 0x2000);
 	else this->mem.CHR.resize(0x2000); // Otherwise initializes 8K of CHR RAM
-	romData.read(&this->mem.PRG[0], header.prgRomSize * 0x4000); // PRG
-	if(header.chrRomSize > 0) romData.read(&this->mem.CHR[0], header.chrRomSize * 0x2000); // CHR
+	romData.read(this->mem.PRG.data(), header.prgRomSize * 0x4000); // PRG
+	romData.read(this->mem.CHR.data(), header.chrRomSize * 0x2000); // CHR
 
 
 	// Set the PC to the memory address at the RESET vector location (0xFFFC/D)
