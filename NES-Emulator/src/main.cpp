@@ -11,7 +11,7 @@ int main() {
 
 	try {
 		Graphics::init();
-		NES nes = NES(NTSC_FREQ, "Ice Climber (U).nes");
+		NES nes = NES(NTSC_FREQ, "Legend of Zelda, The (U) (PRG1) [!].nes");
 		while(!glfwWindowShouldClose(Graphics::window)) {
 			nes.tick();
 		}

@@ -53,6 +53,7 @@ public:
 	uint8_t chosenSpritePixelColor;
 	bool spriteEvaluationDone;
 	//Temp Data
+	uint8_t prevTileNum = 0; // For 8x16 sprites
 	uint8_t tileNum = 0;
 	uint8_t paletteNum = 0; // Parsed ntByte
 	uint8_t lowTileByte = 0;

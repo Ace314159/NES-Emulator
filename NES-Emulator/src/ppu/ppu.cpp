@@ -234,7 +234,7 @@ void PPU::fetchBGData() {
 		this->lowTileByte = mem.getVRAM8(bgPage | (this->tileNum << 4) | fineY);
 		break;
 	case 0: // High BG Tile Byte
-		this->highTileByte = mem.getVRAM8(bgPage | (this->tileNum << 4) | 8 | fineY);
+		this->highTileByte = mem.getVRAM8(bgPage | (this->tileNum << 4) | 0x8 | fineY);
 		break;
 	}
 }
@@ -247,7 +247,7 @@ void PPU::evaluateSprites() { // Sprite Evaluation
 			this->secondaryOAM[4 * this->spritesFound + m] = secondaryOAMBuffer;
 			// Increment OAMADDR when sprite is in range otherwise skip sprite
 			int diff = this->scanlineNum - secondaryOAMBuffer;  // Checks with Y only when m = 0
-			if((diff >= 0 && diff <= 7 + ((this->CTRL & 0x20) >> 2)) || m != 0) {
+			if(diff >= 0 && diff <= 7 + ((this->CTRL & 0x20) >> 2) || m != 0) {
 				if(OAMADDR == 0) this->sprite0IsInSOAM = true;
 				if(++this->OAMADDR % 4 == 0) this->spritesFound++; // Finished loading sprite data
 			}
@@ -264,13 +264,15 @@ void PPU::fetchSpriteData() { // Sprite Fetches
 	this->OAMADDR = 0;
 	this->prevSpritesFound = this->spritesFound;
 	int spriteNum = (this->cycleNum - 1) / 8 - 32;
-	if(spriteNum + 1 > this->prevSpritesFound) return;
+	if(spriteNum >= this->prevSpritesFound) return;
 	bool is8x16 = (this->CTRL >> 5) & 0x1;
 	uint16_t spritePage;
-	bool isVerticallyFlipped = (this->spriteAttrs[spriteNum] >> 7) & 0x1;
-	uint8_t fineY = this->scanlineNum - this->spriteY;
+	// isVerticallyFlipped is used before spriteAttrs is set, so get data from Secondary OAM
+	bool isVerticallyFlipped = (this->secondaryOAM[spriteNum * 4 + 2] >> 7) & 0x1;
+	uint8_t fineY = (this->scanlineNum - this->spriteY) & ~0x8;
 	if(isVerticallyFlipped) fineY = ~fineY & 0x7;
-	if(is8x16) spritePage = (this->tileNum & 0x1) << 12;
+	// For 8x16 sprites tileNum sets bit 0 for lower half, so spritePage is always 0x1000 for lower half
+	if(is8x16) spritePage = (this->prevTileNum & 0x1) << 12;
 	else spritePage = (this->CTRL << 9) & 0x1000;
 
 	switch(this->cycleNum % 8) {
@@ -280,9 +282,8 @@ void PPU::fetchSpriteData() { // Sprite Fetches
 	case 2: // Sprite Tile Num
 		if(is8x16) {
 			// Top Half
-			// TODO: Does not work
-			if((this->spriteY - this->scanlineNum <= 8) != isVerticallyFlipped)
-				this->tileNum = this->secondaryOAM[spriteNum * 4 + 1] & 0xFE;
+			if((this->scanlineNum - this->spriteY < 8) != isVerticallyFlipped)
+				this->prevTileNum = this->tileNum = this->secondaryOAM[spriteNum * 4 + 1] & 0xFE;
 			else // Bottom Half
 				this->tileNum = this->secondaryOAM[spriteNum * 4 + 1] | 0x1;
 		} else this->tileNum = this->secondaryOAM[spriteNum * 4 + 1];
@@ -300,7 +301,7 @@ void PPU::fetchSpriteData() { // Sprite Fetches
 		this->lowSpriteShiftRegs[spriteNum] = this->lowTileByte;
 		break;
 	case 0: // Hgih Sprite Tile Byte
-		this->highTileByte = mem.getVRAM8(spritePage | (this->tileNum << 4) | 8 | fineY);
+		this->highTileByte = mem.getVRAM8(spritePage | (this->tileNum << 4) | 0x8 | fineY);
 		if(((this->spriteAttrs[spriteNum] >> 6) & 0x1) == 1)
 			this->highTileByte = this->BitReverseTable[this->highTileByte];
 		this->highSpriteShiftRegs[spriteNum] = this->highTileByte;
@@ -313,7 +314,7 @@ void PPU::selectSpritePixel() {
 	for(int i = 0; i < this->prevSpritesFound; i++) {
 		if(this->cycleNum - 1 >= this->spriteXs[i] && this->cycleNum - 1 <= this->spriteXs[i] + 7) {
 			uint8_t low = this->lowSpriteShiftRegs[i] << (this->cycleNum - 1 - this->spriteXs[i]);
-			uint8_t high = this->highSpriteShiftRegs[i] << (this->cycleNum - 1- this->spriteXs[i]);
+			uint8_t high = this->highSpriteShiftRegs[i] << (this->cycleNum - 1 - this->spriteXs[i]);
 
 			uint8_t lowSpriteBit = (low >> 7) & 0x1;
 			uint8_t highSpriteBit = (high >> 6) & 0x2;
