@@ -56,7 +56,7 @@ namespace Graphics {
 		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #endif
 		// Setup Window
-		window = glfwCreateWindow(width * 2, height * 2, windowTitle, nullptr, nullptr);
+		window = glfwCreateWindow(width * windowScale, height * windowScale, windowTitle, nullptr, nullptr);
 		if(window == nullptr) {
 			glfwTerminate();
 			throw std::runtime_error("Failed to create window!");
