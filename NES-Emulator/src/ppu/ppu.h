@@ -4,12 +4,10 @@
 #include "memory/memory.h"
 #include "graphics.h"
 
+using Graphics::Color;
+
 class PPU {
 public:
-	struct Color {
-		GLubyte R, G, B;
-	};
-
 	PPU(Memory& m);
 	std::array<Color, 0xFF> paletteTable{}; // Not part of RAM
 

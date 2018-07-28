@@ -9,7 +9,7 @@ namespace Graphics {
 	GLuint screenTexID;
 	GLuint fboID = 0;
 
-	std::array<GLubyte, width * height * 3> screenTexPixels;
+	std::array<Color, width * height> screenTexPixels;
 	GLFWwindow* window;
 	double prevRenderTime = glfwGetTime();
 	double framesPassed = 1;

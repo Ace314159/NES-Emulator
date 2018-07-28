@@ -200,8 +200,8 @@ void PPU::setDot(uint8_t color) {
 	if(this->MASK & 0x1) color &= 0x30;
 	Color rgbColor = this->paletteTable[color];
 
-	int index = ((Graphics::height-1 - this->scanlineNum) * (Graphics::width)*3) + (3*(this->cycleNum-1));
-	std::copy(&rgbColor.R, &rgbColor.B + 1, Graphics::screenTexPixels.data() + index);
+	int index = ((Graphics::height - 1 - this->scanlineNum) * Graphics::width) + this->cycleNum - 1;
+	Graphics::screenTexPixels[index] = rgbColor;
 }
 
 void PPU::fetchBGData() {
