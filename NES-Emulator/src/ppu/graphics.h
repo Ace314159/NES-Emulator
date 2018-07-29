@@ -10,7 +10,7 @@ namespace Graphics {
 
 	const int width = 256;
 	const int height = 240;
-	const int windowScale = 2;
+	const int windowScale = 3;
 	const char* const windowTitle = "NES";
 	
 	extern std::array<Color, width * height> screenTexPixels;

@@ -23,7 +23,18 @@ namespace Graphics {
 		int windowWidth, windowHeight;
 		glfwGetWindowSize(window, &windowWidth, &windowHeight);
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, fboID);
-		glBlitFramebuffer(0, 0, width, height, 0, 0, windowWidth, windowHeight, 
+
+		GLint texX = 0, texY = 0;
+		if(windowWidth * height > windowHeight * width) {
+			int scaledWidth = static_cast<int>(static_cast<double>(width) / height * windowHeight);
+			texX = (windowWidth - scaledWidth) / 2;
+			texY = 0;
+		} else if(windowWidth * height < windowHeight * width) {
+			int scaledHeight = static_cast<int>(static_cast<double>(height) / width * windowWidth);
+			texX = 0;
+			texY = (windowHeight - scaledHeight) / 2;
+		}
+		glBlitFramebuffer(0, 0, width, height, texX, texY, windowWidth - texX, windowHeight - texY,
 			GL_COLOR_BUFFER_BIT, GL_NEAREST);
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 
@@ -66,7 +77,6 @@ namespace Graphics {
 		if(!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
 			throw std::runtime_error("Failed to initialize GLAD");
 		}
-
 #ifdef _DEBUG
 		glEnable(GL_DEBUG_OUTPUT);
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
@@ -77,9 +87,6 @@ namespace Graphics {
 			throw std::runtime_error(error);
 		});
 #endif
-
-		glfwSetWindowAspectRatio(window, width, height);
-
 		glClearColor(0, 0, 0, 1);
 		glClear(GL_COLOR_BUFFER_BIT);
 		glfwSwapBuffers(window);
@@ -87,8 +94,6 @@ namespace Graphics {
 		// Screen Texture Setup
 		glGenTextures(1, &screenTexID);
 		glBindTexture(GL_TEXTURE_2D, screenTexID);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 		float colorBlack[] = {0, 0, 0};
 		glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, colorBlack);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
