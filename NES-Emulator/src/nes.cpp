@@ -56,14 +56,14 @@ void NES::loadRom(std::string romFileName) {
 
 void NES::handleInput() {
 	if(this->cpu.mem.apuRegisters[0x16] & 0x1) {
-		this->cpu.mem.buttons1[0] = glfwGetKey(Graphics::window, GLFW_KEY_A);
-		this->cpu.mem.buttons1[1] = glfwGetKey(Graphics::window, GLFW_KEY_B);
-		this->cpu.mem.buttons1[2] = glfwGetKey(Graphics::window, GLFW_KEY_E);
-		this->cpu.mem.buttons1[3] = glfwGetKey(Graphics::window, GLFW_KEY_T);
-		this->cpu.mem.buttons1[4] = glfwGetKey(Graphics::window, GLFW_KEY_UP);
-		this->cpu.mem.buttons1[5] = glfwGetKey(Graphics::window, GLFW_KEY_DOWN);
-		this->cpu.mem.buttons1[6] = glfwGetKey(Graphics::window, GLFW_KEY_LEFT);
-		this->cpu.mem.buttons1[7] = glfwGetKey(Graphics::window, GLFW_KEY_RIGHT);
+		this->cpu.mem.buttons1[0] = glfwGetKey(this->ppu.window.window, GLFW_KEY_A);
+		this->cpu.mem.buttons1[1] = glfwGetKey(this->ppu.window.window, GLFW_KEY_B);
+		this->cpu.mem.buttons1[2] = glfwGetKey(this->ppu.window.window, GLFW_KEY_E);
+		this->cpu.mem.buttons1[3] = glfwGetKey(this->ppu.window.window, GLFW_KEY_T);
+		this->cpu.mem.buttons1[4] = glfwGetKey(this->ppu.window.window, GLFW_KEY_UP);
+		this->cpu.mem.buttons1[5] = glfwGetKey(this->ppu.window.window, GLFW_KEY_DOWN);
+		this->cpu.mem.buttons1[6] = glfwGetKey(this->ppu.window.window, GLFW_KEY_LEFT);
+		this->cpu.mem.buttons1[7] = glfwGetKey(this->ppu.window.window, GLFW_KEY_RIGHT);
 		this->cpu.mem.buttons1Index = 0;
 	}
 	if(this->cpu.mem.apuRegisters[0x17] & 0x1) {

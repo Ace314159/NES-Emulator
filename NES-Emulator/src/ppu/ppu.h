@@ -2,9 +2,7 @@
 #pragma once
 
 #include "memory/memory.h"
-#include "graphics.h"
-
-using Graphics::Color;
+#include "window.h"
 
 class PPU {
 public:
@@ -12,6 +10,7 @@ public:
 	std::array<Color, 0xFF> paletteTable{}; // Not part of RAM
 
 	Memory& mem;
+	Window window{};
 
 	// Registers
 	uint8_t& CTRL = mem.ppuRegisters[0x0] = 0;

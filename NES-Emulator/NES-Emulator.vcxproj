@@ -173,7 +173,7 @@
     <ClInclude Include="src\memory\mappers\nrom.h" />
     <ClInclude Include="src\memory\memory.h" />
     <ClInclude Include="src\headers\iNESHeader.h" />
-    <ClInclude Include="src\ppu\graphics.h" />
+    <ClInclude Include="src\ppu\window.h" />
     <ClInclude Include="src\nes.h" />
     <ClInclude Include="src\ppu\ppu.h" />
     <ClInclude Include="src\stdafx.h" />
@@ -194,7 +194,7 @@
     <ClCompile Include="src\memory\mappers\nrom.cpp" />
     <ClCompile Include="src\memory\memory.cpp" />
     <ClCompile Include="src\nes.cpp" />
-    <ClCompile Include="src\ppu\graphics.cpp" />
+    <ClCompile Include="src\ppu\window.cpp" />
     <ClCompile Include="src\ppu\ppu.cpp" />
     <ClCompile Include="src\stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

@@ -136,7 +136,7 @@ void PPU::emulateDot() {
 			this->currentVramAddr = (this->currentVramAddr & ~0x41F) | (this->tempVramAddr & 0x41F);
 	} else if(this->scanlineNum == 241 && this->cycleNum == 1) {
 		this->STATUS |= (1 << 7); // Set VBlank flag
-		Graphics::renderScreen();
+		this->window.renderScreen();
 	} else if(this->scanlineNum < 240 && this->scanlineNum != -1 && this->cycleNum <= 256)
 		this->setDot(this->getBGColor(0, 0));
 
@@ -200,8 +200,8 @@ void PPU::setDot(uint8_t color) {
 	if(this->MASK & 0x1) color &= 0x30;
 	Color rgbColor = this->paletteTable[color];
 
-	int index = ((Graphics::height - 1 - this->scanlineNum) * Graphics::width) + this->cycleNum - 1;
-	Graphics::screenTexPixels[index] = rgbColor;
+	int index = ((Window::height - 1 - this->scanlineNum) * Window::width) + this->cycleNum - 1;
+	this->window.screenTexPixels[index] = rgbColor;
 }
 
 void PPU::fetchBGData() {
