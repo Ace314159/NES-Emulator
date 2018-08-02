@@ -28,6 +28,7 @@ Window::Window() {
 		throw std::runtime_error("Failed to create window!");
 	}
 	glfwMakeContextCurrent(window);
+	glfwSwapInterval(1);
 
 	if(!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
 		throw std::runtime_error("Failed to initialize GLAD");
@@ -100,7 +101,7 @@ void Window::renderScreen() {
 	}
 }
 
-void APIENTRY Window::glDebugCallback(GLenum source, GLenum mType, GLuint id, GLenum severity, GLsizei length,
+void APIENTRY glDebugCallback(GLenum source, GLenum mType, GLuint id, GLenum severity, GLsizei length,
 	const GLchar *message, const void *userParam) {
 	std::string src;
 	switch(source) {
