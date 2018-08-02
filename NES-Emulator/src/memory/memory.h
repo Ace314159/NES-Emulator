@@ -57,10 +57,13 @@ public:
 	int& scanlineNum;
 
 	// Buses between CPU and PPU
-	uint8_t cpuPpuBus;
-	uint8_t ppuDATAReadBuffer;
-	uint16_t ppuRegisterRead;
-	uint16_t ppuRegisterWritten;
-	bool ppuCanWrite;
+	uint8_t cpuPpuBus = 0;
+	uint8_t ppuDATAReadBuffer = 0;
+	uint16_t ppuRegisterRead = 0;
+	uint16_t ppuRegisterWritten = 0;
+	bool ppuCanWrite = 0;
+	// Buses between CPU and APU
+	uint16_t apuRegisterRead = 0;
+	uint16_t apuRegisterWritten = 0;
 };
 

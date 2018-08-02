@@ -54,14 +54,16 @@ uint8_t Memory::getRAM8(uint16_t addr) {
 		return this->OAM[this->ppuRegisters[0x3]]; // Gets OAM data at OAMADDR
 	}
 	else if(addr == 0x4014) return this->cpuPpuBus; // PPU Write Only Register
-	else if(addr == 0x4016) {
+	else if(addr == 0x4016) { // Controller 1
 		if(this->buttons1Index < 8) return this->buttons1[this->buttons1Index++];
 		else return 0x1;
-	}
-	else if(addr == 0x4017) {
+	} else if(addr >= 0x4000 && addr <= 0x4017) { // APU Registers
+		this->apuRegisterRead = addr;
+		return ramLoc;
+	} /*else if(addr == 0x4017) { // Controller 2
 		if(this->buttons2Index < 8) return this->buttons2[this->buttons2Index++];
 		else return 0x0;
-	}
+	}*/
 	return ramLoc;
 }
 
@@ -100,6 +102,7 @@ void Memory::setRAM8(uint16_t addr, uint8_t data) {
 		this->mapper->wroteRAM8(addr, data);
 	} else { // APU and I/O Registers (0x4000 - 0x4017)
 		assert(addr >= 0x4000 && addr <= 0x4017);
+		if(addr != 0x4014 && addr != 0x4016) this->apuRegisterWritten = addr;
 		ramLoc = data;
 	}
 	this->mapper->writeCycleDone = true;

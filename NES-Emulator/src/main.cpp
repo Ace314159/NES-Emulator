@@ -1,16 +1,12 @@
 #include "stdafx.h"
 #include "nes.h"
 
-const std::chrono::nanoseconds NTSC_FREQ(1000000000 / (39375000 / 11 * 6 / 12)); // NTSC Clock Frequency
-const std::chrono::nanoseconds PAL_FREQ(1000000000 / (443361875 / 100 * 6 / 16)); // PAL Clock Frequency
-
-
 
 int main(int argc, char* argv[]) {
 	cout << std::hex;
 
 	try {
-		NES nes = NES(NTSC_FREQ, "Legend of Zelda, The (U) (PRG1) [!].nes");
+		NES nes = NES("Legend of Zelda, The (U) (PRG1) [!].nes");
 		while(!glfwWindowShouldClose(nes.ppu.window.window)) {
 			nes.tick();
 		}

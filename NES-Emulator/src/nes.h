@@ -2,20 +2,20 @@
 
 #include "cpu/cpu.h"
 #include "ppu/ppu.h"
+#include "apu/apu.h"
 
 
 class NES {
-private:
-	const std::chrono::nanoseconds CLOCK_TIME;
 public:
-	NES(const std::chrono::nanoseconds ct, std::string romFileName);
+	NES(std::string romFileName);
 	void loadRom(std::string romFileName);
 	void handleInput();
 	void tick();
 
-	Memory mem = Memory(ppu.currentVramAddr, ppu.scanlineNum, ppu.cycleNum);
-	CPU cpu = CPU(mem, ppu.cycleNum, ppu.scanlineNum);
-	PPU ppu = PPU(mem);
+	Memory mem{ppu.currentVramAddr, ppu.scanlineNum, ppu.cycleNum};
+	CPU cpu{mem, ppu.cycleNum, ppu.scanlineNum};
+	PPU ppu{mem};
+	APU apu{mem};
 
 	unsigned int cycleCount = 0;
 };

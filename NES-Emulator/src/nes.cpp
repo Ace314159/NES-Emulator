@@ -2,10 +2,9 @@
 #include "nes.h"
 #include "memory/memory.h"
 
-NES::NES(const std::chrono::nanoseconds ct, std::string romFileName) : CLOCK_TIME(ct) { loadRom(romFileName); }
+NES::NES(std::string romFileName) { loadRom(romFileName); }
 
 void NES::tick() {
-	//auto endTime = std::chrono::high_resolution_clock::now() + CLOCK_TIME;
 	if(this->cycleCount == 29658) this->ppu.canWrite = true;
 
 	this->cpu.emulateCycle();
@@ -14,15 +13,11 @@ void NES::tick() {
 	this->ppu.emulateCycle(false);
 	this->ppu.emulateCycle(false);
 
+	this->apu.emulateCycle();
+
 	this->handleInput();
 
-	// cout << "!" << (int)ppu.currentVramAddr << endl;
-	// cout << "!!" << (int)ppu.tempVramAddr << endl;
-
 	this->cycleCount++;
-	/*while(std::chrono::high_resolution_clock::now() < endTime) {
-		cout << "Ahead" << endl;
-	}*/
 }
 
 void NES::loadRom(std::string romFileName) {
@@ -66,7 +61,7 @@ void NES::handleInput() {
 		this->cpu.mem.buttons1[7] = glfwGetKey(this->ppu.window.window, GLFW_KEY_RIGHT);
 		this->cpu.mem.buttons1Index = 0;
 	}
-	if(this->cpu.mem.apuRegisters[0x17] & 0x1) {
+	/*if(this->cpu.mem.apuRegisters[0x17] & 0x1) {
 		this->cpu.mem.buttons2[0] = 0;
 		this->cpu.mem.buttons2[1] = 0;
 		this->cpu.mem.buttons2[2] = 0;
@@ -76,5 +71,5 @@ void NES::handleInput() {
 		this->cpu.mem.buttons2[6] = 0;
 		this->cpu.mem.buttons2[7] = 0;
 		this->cpu.mem.buttons2Index = 0;
-	}
+	}*/
 }
