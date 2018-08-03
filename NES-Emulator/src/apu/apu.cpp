@@ -24,6 +24,8 @@ void APU::handleRegisterWrites() {
 	switch(this->registerWritten) {
 	case 0x4003:
 		this->pulse1.dutyCyclePositon = 0;
+		this->pulse1.envelopeStartFlag = true;
+		if(this->pulse1.enabled) this->pulse1.loadLengthCounter();
 		break;
 	case 0x4015:
 		this->pulse1.enabled = this->status & 0x1;

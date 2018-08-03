@@ -22,7 +22,7 @@ public:
 	uint16_t& registerWritten = mem.apuRegisterWritten;
 
 	// Channels
-	Pulse pulse1{mem.apuRegisters.data() + 0, registerWritten, audio};
+	Pulse pulse1{mem.apuRegisters.data() + 0, audio, false};
 
 	void emulateCycle();
 
