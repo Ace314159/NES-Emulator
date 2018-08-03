@@ -3,7 +3,7 @@
 
 
 void MMC1::wroteRAM8(uint16_t addr, uint8_t data) {
-	if(addr >= 0x8000 && !this->writeCycleDone) {
+	if(!this->writeCycleDone) {
 		if(data >> 7) {
 			this->shiftRegCount = 0;
 			this->shiftReg = 0;

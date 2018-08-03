@@ -16,7 +16,8 @@ public:
 
 	// CPU
 	// Main
-	uint8_t& getRAMLoc(uint16_t& addr); // Gets memory location from mapper
+	enum class AddrType { INTERNAL_RAM, PPU_REGISTER, APU_REGISTER, WRAM, CARTRIDGE };
+	std::pair<AddrType, uint8_t*> getAddrData(uint16_t& addr);
 	uint8_t getRAM8(uint16_t addr);
 	void setRAM8(uint16_t addr, uint8_t data);
 	// RAM

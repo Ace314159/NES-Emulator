@@ -1,109 +1,118 @@
 #include "stdafx.h"
 #include "memory.h"
 
-
-Memory::Memory(uint16_t& cu, int& scan, int& cyc) : currentVramAddr(cu), scanlineNum(scan), cycleNum(cyc) { }
+Memory::Memory(uint16_t& cu, int& scan, int& cyc) : currentVramAddr(cu), scanlineNum(scan), cycleNum(cyc) {}
 
 // CPU
-uint8_t& Memory::getRAMLoc(uint16_t& addr) {
-	// Memory Mirroring
-	if(addr >= 0x0800 && addr < 0x2000) addr &= 0x07FF; // Internal RAM Mirroring
-	if(addr > 0x2007 && addr < 0x4000) addr &= 0xE007; // PPU Register Mirroring
-	
-	if(addr < 0x0800) return this->internalRAM[addr];
-	assert(addr >= 0x2000);
-	if(/*addr >= 0x2000 && */addr <= 0x2007) return this->ppuRegisters[addr - 0x2000];
-	assert(addr >= 0x4000);
-	if(/*addr >= 0x4000 && */addr <= 0x4017) return this->apuRegisters[addr - 0x4000];
-	if(addr < 0x6000) return temp;
-	if(addr < 0x8000) {
-		if(this->mapper->WRAMEnabled()) return this->WRAM[addr - 0x6000];
-		else return temp;
-	}
-	uint16_t addrC = addr; // Don't want to change actual addr
-	size_t bank = this->mapper->getPRGBank(addrC); // Offsets addrC
+// Main
+std::pair<Memory::AddrType, uint8_t*> Memory::getAddrData(uint16_t& addr) {
+	if(addr < 0x2000) {
+		addr &= 0x07FF;
+		return std::make_pair<AddrType, uint8_t*>(AddrType::INTERNAL_RAM, &this->internalRAM[addr]);
+	} else if(addr < 0x4000) {
+		addr &= 0xE007;
+		return std::make_pair<AddrType, uint8_t*>(AddrType::PPU_REGISTER, &this->ppuRegisters[addr - 0x2000]);
+	} else if(addr == 0x4014)
+		return std::make_pair<AddrType, uint8_t*>(AddrType::PPU_REGISTER, &this->apuRegisters[0x14]);
+	else if(addr < 0x4018)
+		return std::make_pair<AddrType, uint8_t*>(AddrType::APU_REGISTER, &this->apuRegisters[addr - 0x4000]);
+	assert(addr >= 0x4020);
+	if(addr < 0x8000) return std::make_pair<AddrType, uint8_t*>(AddrType::WRAM, &this->WRAM[addr - 0x6000]);
+
+	uint16_t addr2 = addr;
+	size_t bank = this->mapper->getPRGBank(addr2); // Offsets addr
 	size_t bankSize = this->mapper->getPRGBankSize();
-	return this->PRG[bank * bankSize + addrC];
+	return std::make_pair<AddrType, uint8_t*>(AddrType::CARTRIDGE, &this->PRG[bank * bankSize + addr2]);
 }
 
 uint8_t Memory::getRAM8(uint16_t addr) {
 	this->mapper->writeCycleDone = false;
-	/*if(this->DMACalled) {
-		this->inDMA = true;
-		this->DMACalled = false;
-		throw "DMA";
-	}*/
-	uint8_t& ramLoc = this->getRAMLoc(addr);
-	if(addr >= 0x2000 && addr <= 0x2007) { // PPU Registers
-		if(addr == 0x2000 || addr == 0x2001 || addr == 0x2003 || addr == 0x2005 || addr == 0x2006) {
-			return this->cpuPpuBus; // PPU Write Only Registers
-		} else if(addr == 0x2002) {
+	auto addrData = this->getAddrData(addr);
+	AddrType addrType = addrData.first;
+	uint8_t& addrValue = *addrData.second;
+
+	switch(addrType) {
+	case AddrType::INTERNAL_RAM:
+		return addrValue;
+		break;
+	case AddrType::PPU_REGISTER:
+		switch(addr) {
+		case 0x2002:
 			this->ppuRegisterRead = 0x2002;
-			return ramLoc = (ramLoc & ~0x1F) | (this->cpuPpuBus & 0x1F);;
-		} else if(addr == 0x2007) {
+			return addrValue = (addrValue & ~0x1F) | (this->cpuPpuBus & 0x1F);
+			break;
+		case 0x2004:
+			//this->ppuRegisterRead = 0x2004; // Doesn't do anything
+			if(this->cycleNum >= 1 && this->cycleNum <= 65) return 0xFF;
+			return this->OAM[this->ppuRegisters[0x3]]; // Gets OAM data at OAMADDR
+			break;
+		case 0x2007:
 			this->ppuRegisterRead = 0x2007;
 			if(this->currentVramAddr <= 0x3EFF) return this->ppuDATAReadBuffer;
 			else {
-				this->ppuDATAReadBuffer  = this->getVRAM8(this->currentVramAddr & ~0x1000 & 0x3FFF);
+				this->ppuDATAReadBuffer = this->getVRAM8(this->currentVramAddr & ~0x1000 & 0x3FFF);
 				return this->getVRAM8(this->currentVramAddr & 0x3FFF);
 			}
+			break;
+		default: // PPU Write Only Registers
+			return this->cpuPpuBus;
+			break;
 		}
-		assert(addr == 0x2004);
-		// this->ppuMem.registerRead = 0x2004; - Nothing happens anyway
-		if(this->cycleNum >= 1 && this->cycleNum <= 65) return 0xFF;
-		return this->OAM[this->ppuRegisters[0x3]]; // Gets OAM data at OAMADDR
-	}
-	else if(addr == 0x4014) return this->cpuPpuBus; // PPU Write Only Register
-	else if(addr == 0x4016) { // Controller 1
-		if(this->buttons1Index < 8) return this->buttons1[this->buttons1Index++];
-		else return 0x1;
-	} else if(addr >= 0x4000 && addr <= 0x4017) { // APU Registers
+		break;
+	case AddrType::APU_REGISTER:
+		if(addr == 0x4016) { // Controller 1
+			if(this->buttons1Index < 8) return this->buttons1[this->buttons1Index++];
+			else return 0x1;
+		}
 		this->apuRegisterRead = addr;
-		return ramLoc;
-	} /*else if(addr == 0x4017) { // Controller 2
-		if(this->buttons2Index < 8) return this->buttons2[this->buttons2Index++];
-		else return 0x0;
-	}*/
-	return ramLoc;
+		return addrValue;
+		break;
+	case AddrType::WRAM:
+		return addrValue;
+		break;
+	case AddrType::CARTRIDGE:
+		return addrValue;
+		break;
+	default:
+		assert(0);
+		return temp;
+		break;
+	}
 }
 
 void Memory::setRAM8(uint16_t addr, uint8_t data) {
-	uint8_t& ramLoc = this->getRAMLoc(addr);
+	auto addrData = this->getAddrData(addr);
+	AddrType addrType = addrData.first;
+	uint8_t& addrValue = *addrData.second;
 
-	// Internal RAM
-	if(addr < 0x0800) {
-		ramLoc = data;
+	switch(addrType) {
+	case AddrType::INTERNAL_RAM:
+		addrValue = data;
+		break;
+	case AddrType::PPU_REGISTER:
 		this->mapper->writeCycleDone = true;
-		return;
-	}
-	
-	// PPU Registers - Write Registers
-	if(addr == 0x2002) return; // 0x2002 is Read Only
-	if(addr >= 0x2000 && addr <= 0x2007) {
-		bool isRendering = ((this->ppuRegisters[1] >> 3) & 0x1) || (this->ppuRegisters[1] >> 4) & 0x1;;
-		if(addr == 0x2004 && this->scanlineNum < 240 && isRendering) {
-			// || (addr == 0x2000 && this->ppuMem.canWrite)) // Can't write to 0x2000 for first 3000 cycles
-			this->mapper->writeCycleDone = true;
-			return; // Ignore writes to OAM Data during rendering
-		}
-		ramLoc = this->cpuPpuBus = data;
-		// Set low 5 bits of PPUSTATUS - TODO: Find better way
-		this->ppuRegisters[0x2] = (this->ppuRegisters[0x2] & ~(0x1F)) | (this->cpuPpuBus & 0x1F);
-
+		// || (addr == 0x2000 && this->ppuMem.canWrite)) // Can't write to 0x2000 for first 3000 
+		if(addr == 0x2002 || (addr == 0x2004 && this->scanlineNum < 240 && (this->ppuRegisters[1] >> 3) & 0x3))
+			return;
+		addrValue = this->cpuPpuBus = data;
 		this->ppuRegisterWritten = addr;
-	} else if(addr == 0x4014) { // PPU Write Only Register
-		ramLoc = this->cpuPpuBus = data;
-		// Set low 5 bits of PPUSTATUS
-		//arr[0x2002] = (arr[0x2002] & ~(0x1F)) | (this->ppuMem.cpuBus & 0x1F);
-		this->ppuRegisterWritten = 0x4014;
-	} else if(addr >= 0x4020) { // Cartridge RAM
-		assert(addr >= 0x6000);
-		ramLoc = data;
+		// Set low 5 bits of PPUSTATUS - TODO: Find better way
+		this->ppuRegisters[0x2] = (this->ppuRegisters[0x2] & ~0x1F) | (this->cpuPpuBus & 0x1F);
+		break;
+	case AddrType::APU_REGISTER:
+		if(addr != 0x4016) this->apuRegisterWritten = addr;
+		addrValue = data;
+		break;
+	case AddrType::WRAM:
+		addrValue = data;
+		break;
+	case AddrType::CARTRIDGE:
+		addrValue = data;
 		this->mapper->wroteRAM8(addr, data);
-	} else { // APU and I/O Registers (0x4000 - 0x4017)
-		assert(addr >= 0x4000 && addr <= 0x4017);
-		if(addr != 0x4014 && addr != 0x4016) this->apuRegisterWritten = addr;
-		ramLoc = data;
+		break;
+	default:
+		assert(0);
+		break;
 	}
 	this->mapper->writeCycleDone = true;
 }

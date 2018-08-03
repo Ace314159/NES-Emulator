@@ -108,13 +108,8 @@ void APU::changeIRQ() {
 // Audio Mixer
 // From http://wiki.nesdev.com/w/index.php/APU_Mixer
 void APU::fillLookupTables() {
-	for(size_t i = 0; i < this->pulseTable.size(); i++) {
-		this->pulseTable[i] = 95.52 / (8128.0 / i + 100);
-		cout << (int)pulseTable[i] << endl;
-	}
-	for(size_t i = 0; i < this->tndTable.size(); i++) {
-		this->tndTable[i] = 163.67 / (24329.0 / i + 100);
-	}
+	for(size_t i = 0; i < this->pulseTable.size(); i++) this->pulseTable[i] = 95.52 / (8128.0 / i + 100);
+	for(size_t i = 0; i < this->tndTable.size(); i++) this->tndTable[i] = 163.67 / (24329.0 / i + 100);
 }
 
  double APU::generateSample() {
