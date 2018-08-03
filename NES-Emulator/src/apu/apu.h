@@ -7,6 +7,7 @@
 class APU {
 public:
 	APU(Memory& m);
+	const Sint16 globalVolumeFactor = 5000;
 
 	Memory& mem;
 	Audio audio{};
@@ -22,7 +23,8 @@ public:
 	uint16_t& registerWritten = mem.apuRegisterWritten;
 
 	// Channels
-	Pulse pulse1{mem.apuRegisters.data() + 0, audio, false};
+	Pulse pulse1{mem.apuRegisters.data() + 0, false};
+	Pulse pulse2{mem.apuRegisters.data() + 4, true};
 
 	void emulateCycle();
 
@@ -33,5 +35,18 @@ public:
 	void quarterFrame();
 	void halfFrame();
 	void changeIRQ();
+
+	// Audio Mixer
+	// Lookup Tables
+	std::array<double, 31> pulseTable;
+	std::array<double, 203> tndTable;
+	// Downsampling Variables
+	double sampleSum = 0;
+	int cycleCount = 0;
+	const int cyclesPerSample = static_cast<int>(NTSC_FREQ / audio.sampleRate);
+	//Functions
+	void fillLookupTables();
+	double generateSample();
+	void queueAudio();
 };
 

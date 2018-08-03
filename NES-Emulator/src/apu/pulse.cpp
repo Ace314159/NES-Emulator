@@ -4,18 +4,13 @@
 const std::array<std::array<bool, 8>, 4> Pulse::dutyCycleSequences{{ {{0, 1, 0, 0, 0, 0, 0, 0}},
 {{0, 1, 1, 0, 0, 0, 0, 0}}, {{0, 1, 1, 1, 1, 0, 0, 0}}, {{1, 0, 0, 1, 1, 1, 1, 1}} }};
 
-Pulse::Pulse(uint8_t* registerStart, Audio &audio, bool is2) : DLCV(registerStart[0]), is2(is2),
-sweep(registerStart[1]), timerLow(registerStart[2]), LCLTH(registerStart[3]), Channel(registerStart, audio) {
+Pulse::Pulse(uint8_t* registerStart, bool is2) : DLCV(registerStart[0]), is2(is2),
+sweep(registerStart[1]), timerLow(registerStart[2]), LCLTH(registerStart[3]), Channel(registerStart) {
 
 }
 
 
 // Channel Functions
-Sint16 Pulse::generateSample() {
-	if(this->sweepMuted() || this->lengthCounter == 0) return 0;
-	return this->getVolume() * this->dutyCycleSequences[this->dutyCycle()][this->dutyCyclePositon];
-}
-
 void Pulse::emulateCycle() {
 	if(!this->enabled) {
 		this->lengthCounter = 0;
@@ -26,6 +21,11 @@ void Pulse::emulateCycle() {
 		++this->dutyCyclePositon %= 8;
 		this->timerDividerCounter = this->timer();
 	} else this->timerDividerCounter--;
+}
+
+uint8_t Pulse::generateSample() {
+	if(this->sweepMuted() || this->lengthCounter == 0) return 0;
+	return this->getVolume() * this->dutyCycleSequences[this->dutyCycle()][this->dutyCyclePositon];
 }
 
 void Pulse::halfFrame() {

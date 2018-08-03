@@ -5,7 +5,7 @@
 
 class Pulse : public Channel {
 public:
-	Pulse(uint8_t* registerStart, Audio& audio, bool is2);
+	Pulse(uint8_t* registerStart, bool is2);
 	
 	// Registers
 	bool is2;
@@ -35,8 +35,8 @@ public:
 	bool sweepReloadFlag;
 
 	// Channel Functions
-	Sint16 generateSample() override;
 	void emulateCycle() override;
+	uint8_t generateSample() override;
 	void halfFrame() override;
 
 	// Useful Functions

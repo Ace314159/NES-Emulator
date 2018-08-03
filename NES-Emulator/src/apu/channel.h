@@ -4,17 +4,9 @@
 
 class Channel {
 protected:
-	Channel(uint8_t* registerStart, Audio& audio);
-	Audio& audio;
+	Channel(uint8_t* registerStart);
 	uint8_t* registerStart;
-
-	int cycleCount = 0;
-	int sampleSum = 0;
-	const double cylesPerSample;
-	const int globalVolumeFactor = 50;
 public:
-	// Useful Functions
-	void queueAudio();
 	// Register Functions
 	uint8_t getLengthCounter() { return registerStart[3] >> 3; };
 	uint8_t volume() { return this->registerStart[0] & 0xF; };
@@ -35,8 +27,8 @@ public:
 	virtual void halfFrame();
 
 	// Functions all channels should implement
-	virtual Sint16 generateSample() = 0;
 	virtual void emulateCycle() = 0;
+	virtual uint8_t generateSample() = 0;
 
 	// Useful Variables
 	bool enabled = false;

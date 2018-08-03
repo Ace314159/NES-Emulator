@@ -2,7 +2,7 @@
 #include "apu.h"
 
 
-APU::APU(Memory& m) : mem(m) {}
+APU::APU(Memory& m) : mem(m) { this->fillLookupTables(); }
 
 void APU::emulateCycle() {
 	if(this->registerRead) this->handleRegisterReads();
@@ -10,8 +10,11 @@ void APU::emulateCycle() {
 
 	this->emulateFrameCounter();
 
-	if(this->evenCycle) this->pulse1.emulateCycle();
-	this->pulse1.queueAudio();
+	if(this->evenCycle) {
+		this->pulse1.emulateCycle();
+		this->pulse2.emulateCycle();
+	}
+	this->queueAudio();
 
 	this->evenCycle = !this->evenCycle;
 }
@@ -27,8 +30,13 @@ void APU::handleRegisterWrites() {
 		this->pulse1.envelopeStartFlag = true;
 		if(this->pulse1.enabled) this->pulse1.loadLengthCounter();
 		break;
+	case 0x4007:
+		this->pulse2.dutyCyclePositon = 0;
+		this->pulse2.envelopeStartFlag = true;
+		if(this->pulse2.enabled) this->pulse2.loadLengthCounter();
 	case 0x4015:
-		this->pulse1.enabled = this->status & 0x1;
+		this->pulse1.enabled = (this->status >> 0) & 0x1;
+		this->pulse2.enabled = (this->status >> 1) & 0x1;
 		break;
 	}
 	this->registerWritten = 0;
@@ -83,13 +91,43 @@ void APU::emulateFrameCounter() {
 
 void APU::quarterFrame() {
 	this->pulse1.quarterFrame();
+	this->pulse2.quarterFrame();
 }
 
 void APU::halfFrame() {
 	this->quarterFrame();
 	this->pulse1.halfFrame();
+	this->pulse2.quarterFrame();
 }
 
 void APU::changeIRQ() {
 	this->mem.inIRQ = ~((this->frameCounter >> 6) & 0x1);
+}
+
+
+// Audio Mixer
+// From http://wiki.nesdev.com/w/index.php/APU_Mixer
+void APU::fillLookupTables() {
+	for(size_t i = 0; i < this->pulseTable.size(); i++) {
+		this->pulseTable[i] = 95.52 / (8128.0 / i + 100);
+		cout << (int)pulseTable[i] << endl;
+	}
+	for(size_t i = 0; i < this->tndTable.size(); i++) {
+		this->tndTable[i] = 163.67 / (24329.0 / i + 100);
+	}
+}
+
+ double APU::generateSample() {
+	 double pulseOut = this->pulseTable[this->pulse1.generateSample() + this->pulse2.generateSample()];
+	 return pulseOut;
+}
+
+void APU::queueAudio() {
+	this->sampleSum += this->generateSample();
+	if(this->cycleCount > this->cyclesPerSample) {
+		Sint16 sample = static_cast<Sint16>(globalVolumeFactor * this->sampleSum / this->cycleCount);
+		SDL_QueueAudio(this->audio.device, &sample, sizeof(sample));
+		this->cycleCount = 0;
+		this->sampleSum = 0;
+	} else this->cycleCount++;
 }
