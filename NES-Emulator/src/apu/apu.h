@@ -33,6 +33,5 @@ public:
 	void quarterFrame();
 	void halfFrame();
 	void changeIRQ();
-	void generateSamples(Sint16* buffer, int length);
 };
 
