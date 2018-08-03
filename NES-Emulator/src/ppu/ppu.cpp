@@ -331,6 +331,7 @@ void PPU::selectSpritePixel() {
 	}
 }
 
+// From https://wiki.nesdev.com/w/index.php/PPU_scrolling#Wrapping_around
 void PPU::incrementScrollX() {
 	if((this->currentVramAddr & 0x001F) == 31) {
 		// Switch horizontal nametable
@@ -340,6 +341,7 @@ void PPU::incrementScrollX() {
 	}
 }
 
+// From https://wiki.nesdev.com/w/index.php/PPU_scrolling#Wrapping_around
 void PPU::incrementScrollY() {
 	if((this->currentVramAddr & 0x7000) != 0x7000) { // Fine y < 7
 		this->currentVramAddr += 0x1000; // Increment fine y
