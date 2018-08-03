@@ -44,6 +44,8 @@ public:
 	uint8_t DMAVal;
 	bool inOddCycle = false;
 	bool DMAdoneDummy = false;
+	// IRQ
+	bool inIRQ = false;
 
 	// PPU
 	// Main
