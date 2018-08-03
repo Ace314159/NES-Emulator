@@ -2,9 +2,7 @@
 
 #include "memory/memory.h"
 #include "pulse.h"
-#include <queue>
 
-void audioCallback(void *context, Uint8 *raw_buffer, int bytes);
 
 class APU {
 public:

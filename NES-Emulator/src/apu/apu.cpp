@@ -14,12 +14,6 @@ void APU::emulateCycle() {
 	this->evenCycle = !this->evenCycle;
 }
 
-void APU::generateSamples(Sint16* buffer, int length) {
-	for(int i = 0; i < length; i++) {
-		buffer[i] = this->pulse1.generateSample();
-	}
-}
-
 void APU::handleRegisterReads() {
 	this->registerRead = 0;
 }
@@ -36,10 +30,5 @@ void APU::handleRegisterWrites() {
 	this->registerWritten = 0;
 }
 
-void audioCallback(void *context, Uint8 *raw_buffer, int bytes) {
-	APU* apu = reinterpret_cast<APU*>(context);
-	Sint16 *buffer = reinterpret_cast<Sint16*>(raw_buffer);
-	int length = bytes / sizeof(Sint16);
 
-	apu->generateSamples(buffer, length);
 }
