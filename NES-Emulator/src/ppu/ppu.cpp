@@ -55,7 +55,8 @@ void PPU::handleRegisterWrites() {
 			this->tempVramAddr = (this->tempVramAddr & ~0x73E0) | ((this->SCROLL & 0x7) << 12) |
 								 ((this->SCROLL & (0x1F << 3)) << 2);
 		} else {
-			this->fineXScroll = this->SCROLL & 0x7; // x: CBA = d: .....CBA
+			// Does 15 - fineXScroll for later use
+			this->fineXScroll = 15 - (this->SCROLL & 0x7); // x: CBA = d: .....CBA
 			// t: ....... ...HGFED = d: HGFED...
 			this->tempVramAddr = (this->tempVramAddr & ~0x1F) | this->SCROLL >> 3;
 		}
@@ -88,6 +89,7 @@ void PPU::handleRegisterWrites() {
 
 void PPU::emulateDot() {
 	if(this->cycleNum == 0) { // Idle
+		if(this->scanlineNum == -1) this->oddFrame = !this->oddFrame;
 		this->cycleNum++;
 		return;
 	} else if(this->scanlineNum == -1) { // Pre-render Scanline
@@ -111,7 +113,7 @@ void PPU::emulateDot() {
 
 		if(this->cycleNum <= 256 || this->cycleNum > 320) {
 			this->fetchBGData();
-			if(this->cycleNum > 64 && this->cycleNum <= 256 && this->scanlineNum != -1) this->evaluateSprites();
+			if(this->scanlineNum != -1 && this->cycleNum > 64 && this->cycleNum <= 256) this->evaluateSprites();
 			if(this->scanlineNum != -1 && this->cycleNum <= 256) this->renderDot();
 			if(this->cycleNum >= 2 && this->cycleNum <= 257 || this->cycleNum >= 322 && this->cycleNum <= 337) {
 				this->lowBGShiftReg <<= 1;
@@ -122,21 +124,23 @@ void PPU::emulateDot() {
 			if(this->cycleNum % 8 == 0) this->incrementScrollX(); // Inc.hori(v)
 			if(this->cycleNum == 256) this->incrementScrollY(); // Inc. vert(v)
 		}
-		else if(this->cycleNum > 256 && this->cycleNum <= 320)
+		else {// if(this->cycleNum > 256 && this->cycleNum <= 320)
 			this->fetchSpriteData();
-		if(this->cycleNum == 257) // hori(v) = hori(t)
-			this->currentVramAddr = (this->currentVramAddr & ~0x41F) | (this->tempVramAddr & 0x41F);
+			if(this->cycleNum == 257) // hori(v) = hori(t)
+				this->currentVramAddr = (this->currentVramAddr & ~0x41F) | (this->tempVramAddr & 0x41F);
+		}
 	} else if(this->scanlineNum == 241 && this->cycleNum == 1) {
 		this->STATUS |= (1 << 7); // Set VBlank flag
 		this->window.renderScreen();
-	} else if(this->scanlineNum < 240 && this->scanlineNum != -1 && this->cycleNum <= 256)
+	} else if(this->scanlineNum != -1 && this->scanlineNum < 240 && this->cycleNum <= 256)
 		this->setDot(this->getBGColor(0, 0));
 
 	// Skip one cycle if odd frame and is rendering
-	if(this->cycleNum == 338 && this->scanlineNum == -1 && this->isRenderingBG() && oddFrame) this->cycleNum++;
-	if(this->cycleNum == 340) this->scanlineNum = ((this->scanlineNum + 1+1) % (261+1))-1;
-	this->cycleNum = (this->cycleNum + 1) % 341;
-	if(this->scanlineNum == -1 && this->cycleNum == 0) this->oddFrame = !this->oddFrame;
+	if(this->scanlineNum == -1 && this->cycleNum == 338 && this->isRenderingBG()) this->cycleNum += oddFrame;
+	if(this->cycleNum == 340) {
+		this->scanlineNum = ((this->scanlineNum + 1 + 1) % (261 + 1)) - 1;
+		this->cycleNum = 0;
+	} else this->cycleNum++;
 }
 
 
@@ -158,14 +162,14 @@ void PPU::renderDot() {
 	if(this->isRenderingSprites() && (((this->MASK >> 2) & 0x1) || this->cycleNum > 8)) {
 		this->selectSpritePixel();
 	}
-	// Background Data
-	uint8_t lowAttrBit = (this->lowBGAttrShiftReg >> (15 - this->fineXScroll)) & 0x1;
-	uint8_t highAttrBit = (this->highBGAttrShiftReg >> (15 - this->fineXScroll)) & 0x1;
-	uint8_t lowBGBit  = (this->lowBGShiftReg  >> (15 - this->fineXScroll)) & 0x1;
-	uint8_t highBGBit = (this->highBGShiftReg >> (15 - this->fineXScroll)) & 0x1;
+	// Background Data - fineXScroll is already 15 - fineXScroll
+	uint8_t lowAttrBit = (this->lowBGAttrShiftReg >> this->fineXScroll) & 0x1;
+	uint8_t highAttrBit = (this->highBGAttrShiftReg >> this->fineXScroll) & 0x1;
+	uint8_t lowBGBit  = (this->lowBGShiftReg  >> this->fineXScroll) & 0x1;
+	uint8_t highBGBit = (this->highBGShiftReg >> this->fineXScroll) & 0x1;
 	uint8_t bgPaletteNum = (highAttrBit << 1) | lowAttrBit;
 	uint8_t bgColorNum = (highBGBit << 1) | lowBGBit;
-	if(!(this->isRenderingBG() && (((this->MASK >> 1) & 0x1) || this->cycleNum > 8))) bgColorNum = 0;
+	if(!this->isRenderingBG() || !(((this->MASK >> 1) & 0x1) || this->cycleNum > 8)) bgColorNum = 0;
 	// Priority Multiplexer Decision
 	uint8_t color;
 	if(this->chosenSpritePixelIndex == -1) {

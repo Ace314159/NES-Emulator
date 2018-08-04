@@ -29,7 +29,7 @@ public:
 	// Background
 	uint16_t currentVramAddr = 0; // yyyNNYYYYYXXXXX
 	uint16_t tempVramAddr = 0; // yyyNNYYYYYXXXXX
-	uint8_t fineXScroll = 0;
+	uint8_t fineXScroll = 15; // Actually 15 - fineXScroll
 	bool onSecondWrite = false;
 	uint16_t lowBGShiftReg = 0; // For Low BG Tile Byte
 	uint16_t highBGShiftReg = 0; // For High BG Tile Byte
