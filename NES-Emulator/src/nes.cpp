@@ -5,8 +5,6 @@
 NES::NES(std::string romFileName) { loadRom(romFileName); }
 
 void NES::tick() {
-	if(this->cycleCount == 29658) this->ppu.canWrite = true;
-
 	this->cpu.emulateCycle();
 
 	this->ppu.emulateCycle(true);
@@ -17,7 +15,7 @@ void NES::tick() {
 
 	this->handleInput();
 
-	this->cycleCount++;
+	this->mem.mapper->cycleCount++;
 }
 
 void NES::loadRom(std::string romFileName) {

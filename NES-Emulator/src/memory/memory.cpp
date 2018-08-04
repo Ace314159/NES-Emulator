@@ -26,7 +26,6 @@ std::pair<Memory::RAMAddrType, uint8_t*> Memory::getRAMAddrData(uint16_t& addr) 
 }
 
 uint8_t Memory::getRAM8(uint16_t addr) {
-	this->mapper->writeCycleDone = false;
 	auto addrData = this->getRAMAddrData(addr);
 	RAMAddrType addrType = addrData.first;
 	uint8_t& addrValue = *addrData.second;
@@ -112,7 +111,6 @@ void Memory::setRAM8(uint16_t addr, uint8_t data) {
 		assert(0);
 		break;
 	}
-	this->mapper->writeCycleDone = true;
 }
 
 

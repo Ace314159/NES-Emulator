@@ -16,7 +16,5 @@ public:
 	CPU cpu{mem, ppu.cycleNum, ppu.scanlineNum};
 	PPU ppu{mem};
 	APU apu{mem};
-
-	unsigned int cycleCount = 0;
 };
 

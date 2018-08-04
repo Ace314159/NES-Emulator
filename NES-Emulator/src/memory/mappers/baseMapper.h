@@ -17,7 +17,8 @@ public:
 	std::array<uint8_t, 0x0020> palette{};      // 0x3F00 - 0x3F1F
 
 	// Useful Variables
-	bool writeCycleDone = false;
+	unsigned int cycleCount = 0;
+	unsigned prevCycleCount;
 	iNESHeader header;
 
 

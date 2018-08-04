@@ -3,41 +3,41 @@
 
 
 void MMC1::wroteRAM8(uint16_t addr, uint8_t data) {
-	if(!this->writeCycleDone) {
-		if(data >> 7) {
-			this->shiftRegCount = 0;
-			this->shiftReg = 0;
-		} else {
-			this->shiftReg |= (data & 0x1) << this->shiftRegCount;
-			this->shiftRegCount++;
-			if(this->shiftRegCount == 5) {
-				if(addr < 0xA000) {
-					this->CTRL = this->shiftReg;
-					uint8_t mirroring = this->CTRL & 0x3;
-					switch(mirroring) {
-					case 0:
-						this->setNametableMirroringType(NametableMirroringType::ONE_A);
-						break;
-					case 1:
-						this->setNametableMirroringType(NametableMirroringType::ONE_B);
-						break;
-					case 2:
-						this->setNametableMirroringType(NametableMirroringType::VERTICAL);
-						break;
-					case 3:
-						this->setNametableMirroringType(NametableMirroringType::HORIZONTAL);
-						break;
-					}
+	if(this->cycleCount - this->prevCycleCount <= 1) return;
+	if(data >> 7) {
+		this->shiftRegCount = 0;
+		this->shiftReg = 0;
+	} else {
+		this->shiftReg |= (data & 0x1) << this->shiftRegCount;
+		this->shiftRegCount++;
+		if(this->shiftRegCount == 5) {
+			if(addr < 0xA000) {
+				this->CTRL = this->shiftReg;
+				uint8_t mirroring = this->CTRL & 0x3;
+				switch(mirroring) {
+				case 0:
+					this->setNametableMirroringType(NametableMirroringType::ONE_A);
+					break;
+				case 1:
+					this->setNametableMirroringType(NametableMirroringType::ONE_B);
+					break;
+				case 2:
+					this->setNametableMirroringType(NametableMirroringType::VERTICAL);
+					break;
+				case 3:
+					this->setNametableMirroringType(NametableMirroringType::HORIZONTAL);
+					break;
 				}
-				else if(addr < 0xC000) this->CHRBank0 = this->shiftReg;
-				else if(addr < 0xE000) this->CHRBank1 = this->shiftReg;
-				else this->PRGBank = this->shiftReg;
-				
-				this->shiftReg = 0;
-				this->shiftRegCount = 0;
 			}
+			else if(addr < 0xC000) this->CHRBank0 = this->shiftReg;
+			else if(addr < 0xE000) this->CHRBank1 = this->shiftReg;
+			else this->PRGBank = this->shiftReg;
+				
+			this->shiftReg = 0;
+			this->shiftRegCount = 0;
 		}
 	}
+	this->prevCycleCount = this->cycleCount;
 }
 
 uint8_t MMC1::getPRGBank(uint16_t& addr) {
