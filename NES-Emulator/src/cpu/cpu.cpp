@@ -55,7 +55,7 @@ void CPU::OAMDMA() {
 void CPU::lastAddressingCycle(uint16_t newEffectiveAddr) {
 	this->addressingCyclesUsed = this->cycleNum + 1; // Equals cycleNum after increment in lastCycle()
 	this->effectiveAddr = newEffectiveAddr;
-	this->dataV = *mem.getAddrData(this->effectiveAddr).second; // May trigger registerRead
+	this->dataV = *mem.getRAMAddrData(this->effectiveAddr).second; // May trigger registerRead
 	this->gotData = true;
 	this->onAccumulator = false;
 }
@@ -780,7 +780,7 @@ void CPU::SAX() { // Undocumented
 }
 
 void CPU::SBC() { // ADC with flipped data
-	uint8_t& ref = *this->mem.getAddrData(this->effectiveAddr).second;
+	uint8_t& ref = *this->mem.getRAMAddrData(this->effectiveAddr).second;
 	ref = ~ref;
 	this->ADC();
 	ref = ~ref; // Flip back to original

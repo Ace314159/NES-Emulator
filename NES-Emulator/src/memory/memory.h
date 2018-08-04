@@ -16,8 +16,8 @@ public:
 
 	// CPU
 	// Main
-	enum class AddrType { INTERNAL_RAM, PPU_REGISTER, APU_REGISTER, WRAM, CARTRIDGE };
-	std::pair<AddrType, uint8_t*> getAddrData(uint16_t& addr);
+	enum class RAMAddrType { INTERNAL_RAM, PPU_REGISTER, APU_REGISTER, WRAM, CARTRIDGE };
+	std::pair<RAMAddrType, uint8_t*> getRAMAddrData(uint16_t& addr);
 	uint8_t getRAM8(uint16_t addr);
 	void setRAM8(uint16_t addr, uint8_t data);
 	// RAM

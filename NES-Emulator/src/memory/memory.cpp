@@ -5,37 +5,37 @@ Memory::Memory(uint16_t& cu, int& scan, int& cyc) : currentVramAddr(cu), scanlin
 
 // CPU
 // Main
-std::pair<Memory::AddrType, uint8_t*> Memory::getAddrData(uint16_t& addr) {
+std::pair<Memory::RAMAddrType, uint8_t*> Memory::getRAMAddrData(uint16_t& addr) {
 	if(addr < 0x2000) {
 		addr &= 0x07FF;
-		return std::make_pair<AddrType, uint8_t*>(AddrType::INTERNAL_RAM, &this->internalRAM[addr]);
+		return std::make_pair(RAMAddrType::INTERNAL_RAM, &this->internalRAM[addr]);
 	} else if(addr < 0x4000) {
 		addr &= 0xE007;
-		return std::make_pair<AddrType, uint8_t*>(AddrType::PPU_REGISTER, &this->ppuRegisters[addr - 0x2000]);
+		return std::make_pair(RAMAddrType::PPU_REGISTER, &this->ppuRegisters[addr - 0x2000]);
 	} else if(addr == 0x4014)
-		return std::make_pair<AddrType, uint8_t*>(AddrType::PPU_REGISTER, &this->apuRegisters[0x14]);
+		return std::make_pair(RAMAddrType::PPU_REGISTER, &this->apuRegisters[0x14]);
 	else if(addr < 0x4018)
-		return std::make_pair<AddrType, uint8_t*>(AddrType::APU_REGISTER, &this->apuRegisters[addr - 0x4000]);
+		return std::make_pair(RAMAddrType::APU_REGISTER, &this->apuRegisters[addr - 0x4000]);
 	assert(addr >= 0x4020);
-	if(addr < 0x8000) return std::make_pair<AddrType, uint8_t*>(AddrType::WRAM, &this->WRAM[addr - 0x6000]);
+	if(addr < 0x8000) return std::make_pair(RAMAddrType::WRAM, &this->WRAM[addr - 0x6000]);
 
 	uint16_t addr2 = addr;
 	size_t bank = this->mapper->getPRGBank(addr2); // Offsets addr
 	size_t bankSize = this->mapper->getPRGBankSize();
-	return std::make_pair<AddrType, uint8_t*>(AddrType::CARTRIDGE, &this->PRG[bank * bankSize + addr2]);
+	return std::make_pair(RAMAddrType::CARTRIDGE, &this->PRG[bank * bankSize + addr2]);
 }
 
 uint8_t Memory::getRAM8(uint16_t addr) {
 	this->mapper->writeCycleDone = false;
-	auto addrData = this->getAddrData(addr);
-	AddrType addrType = addrData.first;
+	auto addrData = this->getRAMAddrData(addr);
+	RAMAddrType addrType = addrData.first;
 	uint8_t& addrValue = *addrData.second;
 
 	switch(addrType) {
-	case AddrType::INTERNAL_RAM:
+	case RAMAddrType::INTERNAL_RAM:
 		return addrValue;
 		break;
-	case AddrType::PPU_REGISTER:
+	case RAMAddrType::PPU_REGISTER:
 		switch(addr) {
 		case 0x2002:
 			this->ppuRegisterRead = 0x2002;
@@ -59,7 +59,7 @@ uint8_t Memory::getRAM8(uint16_t addr) {
 			break;
 		}
 		break;
-	case AddrType::APU_REGISTER:
+	case RAMAddrType::APU_REGISTER:
 		if(addr == 0x4016) { // Controller 1
 			if(this->buttons1Index < 8) return this->buttons1[this->buttons1Index++];
 			else return 0x1;
@@ -67,10 +67,10 @@ uint8_t Memory::getRAM8(uint16_t addr) {
 		this->apuRegisterRead = addr;
 		return addrValue;
 		break;
-	case AddrType::WRAM:
+	case RAMAddrType::WRAM:
 		return addrValue;
 		break;
-	case AddrType::CARTRIDGE:
+	case RAMAddrType::CARTRIDGE:
 		return addrValue;
 		break;
 	default:
@@ -81,15 +81,15 @@ uint8_t Memory::getRAM8(uint16_t addr) {
 }
 
 void Memory::setRAM8(uint16_t addr, uint8_t data) {
-	auto addrData = this->getAddrData(addr);
-	AddrType addrType = addrData.first;
+	auto addrData = this->getRAMAddrData(addr);
+	RAMAddrType addrType = addrData.first;
 	uint8_t& addrValue = *addrData.second;
 
 	switch(addrType) {
-	case AddrType::INTERNAL_RAM:
+	case RAMAddrType::INTERNAL_RAM:
 		addrValue = data;
 		break;
-	case AddrType::PPU_REGISTER:
+	case RAMAddrType::PPU_REGISTER:
 		this->mapper->writeCycleDone = true;
 		// || (addr == 0x2000 && this->ppuMem.canWrite)) // Can't write to 0x2000 for first 3000 
 		if(addr == 0x2002 || (addr == 0x2004 && this->scanlineNum < 240 && (this->ppuRegisters[1] >> 3) & 0x3))
@@ -99,14 +99,14 @@ void Memory::setRAM8(uint16_t addr, uint8_t data) {
 		// Set low 5 bits of PPUSTATUS - TODO: Find better way
 		this->ppuRegisters[0x2] = (this->ppuRegisters[0x2] & ~0x1F) | (this->cpuPpuBus & 0x1F);
 		break;
-	case AddrType::APU_REGISTER:
+	case RAMAddrType::APU_REGISTER:
 		if(addr != 0x4016) this->apuRegisterWritten = addr;
 		addrValue = data;
 		break;
-	case AddrType::WRAM:
+	case RAMAddrType::WRAM:
 		addrValue = data;
 		break;
-	case AddrType::CARTRIDGE:
+	case RAMAddrType::CARTRIDGE:
 		addrValue = data;
 		this->mapper->wroteRAM8(addr, data);
 		break;
