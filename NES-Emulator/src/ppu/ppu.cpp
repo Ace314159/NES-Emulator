@@ -4,23 +4,19 @@
 
 PPU::PPU(Memory& m) : mem(m) { this->initPaletteTable("../res/Nintendulator-NTSC.pal"); }
 
-void PPU::emulateCycle(bool afterCPU) {
-	this->emulateDot();
+void PPU::emulateAferCPU() {
+	if(this->registerRead) this->handleRegisterReads();
+	else if(this->registerWritten) this->handleRegisterWrites();
 
-	if(afterCPU) {
-		if(this->registerRead) this->handleRegisterReads();
-		else if(this->registerWritten) this->handleRegisterWrites();
-
-		// Checks if an NMI should occur
-		if((this->STATUS >> 7) & (this->CTRL >> 7)) {
-			mem.NMICalled = this->oldNMI ^ true; // Edge-sensitivity
-			if(mem.inNMI) this->oldNMI = true; // Don't change until CPU actually responds
-		} else {
-			this->oldNMI = false;
-		}
-		if(mem.inDMA && mem.inOddCycle && mem.DMAdoneDummy) {
-			this->mem.OAM[(this->OAMDMAStartAddr + ((mem.DMAAddr - 1) & 0xff)) % 256] = this->mem.DMAVal;
-		}
+	// Checks if an NMI should occur
+	if((this->STATUS >> 7) & (this->CTRL >> 7)) {
+		mem.NMICalled = this->oldNMI ^ true; // Edge-sensitivity
+		if(mem.inNMI) this->oldNMI = true; // Don't change until CPU actually responds
+	} else {
+		this->oldNMI = false;
+	}
+	if(mem.inDMA && mem.DMAdoneDummy && (this->mem.mapper->cycleCount % 2)) {
+		this->mem.OAM[(this->OAMDMAStartAddr + ((mem.DMAAddr - 1) & 0xff)) % 256] = this->mem.DMAVal;
 	}
 }
 
@@ -37,8 +33,6 @@ void PPU::handleRegisterReads() {
 			mem.ppuDATAReadBuffer = mem.getVRAM8(this->currentVramAddr & ~0x1000);
 		}
 		this->currentVramAddr += 1 + ((this->CTRL >> 2) & 0x1) * 31;
-		break;
-	default:
 		break;
 	}
 	this->registerRead = 0;
@@ -88,8 +82,6 @@ void PPU::handleRegisterWrites() {
 		mem.inDMA = true;
 		this->OAMDMAStartAddr = this->OAMADDR;
 		break;
-	default:
-		break;
 	}
 	this->registerWritten = 0;
 }
@@ -110,7 +102,7 @@ void PPU::emulateDot() {
 
 
 	if(this->scanlineNum < 240 && this->isRendering()) { // Pre-render Scanline and Visible Scanlines
-		if(this->cycleNum <= 64 && this->scanlineNum != -1) { // Secondary OAM Clear
+		if(this->scanlineNum != -1 && this->cycleNum <= 64) { // Secondary OAM Clear
 			this->secondaryOAM[this->cycleNum % 32] = 0xFF;
 			this->secondaryOAMBuffer = 0xFF;
 			this->spritesFound = 0;

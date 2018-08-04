@@ -7,9 +7,10 @@ NES::NES(std::string romFileName) { loadRom(romFileName); }
 void NES::tick() {
 	this->cpu.emulateCycle();
 
-	this->ppu.emulateCycle(true);
-	this->ppu.emulateCycle(false);
-	this->ppu.emulateCycle(false);
+	this->ppu.emulateAferCPU();
+	this->ppu.emulateDot();
+	this->ppu.emulateDot();
+	this->ppu.emulateDot();
 
 	this->apu.emulateCycle();
 

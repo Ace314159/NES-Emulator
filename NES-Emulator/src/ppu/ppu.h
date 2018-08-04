@@ -64,8 +64,7 @@ public:
 	uint16_t& registerRead = mem.ppuRegisterRead;
 	uint16_t& registerWritten = mem.ppuRegisterWritten;
 
-	void emulateCycle(bool afterCPU); // Emulates a single PPU cyle
-
+	void emulateAferCPU(); // Emulates all interactions with CPU
 	void handleRegisterReads();
 	void handleRegisterWrites();
 	void emulateDot();

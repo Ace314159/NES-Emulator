@@ -43,7 +43,6 @@ public:
 	uint16_t DMAAddr;
 	uint8_t DMAPage;
 	uint8_t DMAVal;
-	bool inOddCycle = false;
 	bool DMAdoneDummy = false;
 	// IRQ
 	bool inIRQ = false;
