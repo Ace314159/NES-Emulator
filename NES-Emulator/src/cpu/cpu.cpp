@@ -38,7 +38,7 @@ void CPU::emulateCycle() {
 // DMAs
 void CPU::OAMDMA() {
 	if((this->mem.DMAAddr >> 8) == this->mem.DMAPage) { // If DMAAdrr has not overflowed
-		if(this->mem.mapper->cycleCount % 2 == 0 && this->mem.DMAdoneDummy) { // Read cycles are even cycles
+		if(this->mem.mapper->CPUcycleCount % 2 == 0 && this->mem.DMAdoneDummy) { // Read cycles are even cycles
 			this->mem.DMAVal = this->mem.getRAM8(mem.DMAAddr++); // Incremented in PPU
 		}
 		this->mem.DMAdoneDummy = true;

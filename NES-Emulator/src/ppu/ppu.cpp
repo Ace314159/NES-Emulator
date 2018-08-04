@@ -15,7 +15,7 @@ void PPU::emulateAferCPU() {
 	} else {
 		this->oldNMI = false;
 	}
-	if(mem.inDMA && mem.DMAdoneDummy && (this->mem.mapper->cycleCount % 2)) {
+	if(mem.inDMA && mem.DMAdoneDummy && (this->mem.mapper->CPUcycleCount % 2)) {
 		this->mem.OAM[(this->OAMDMAStartAddr + ((mem.DMAAddr - 1) & 0xff)) % 256] = this->mem.DMAVal;
 	}
 }
@@ -124,10 +124,14 @@ void PPU::emulateDot() {
 			if(this->cycleNum % 8 == 0) this->incrementScrollX(); // Inc.hori(v)
 			if(this->cycleNum == 256) this->incrementScrollY(); // Inc. vert(v)
 		}
-		else {// if(this->cycleNum > 256 && this->cycleNum <= 320)
-			this->fetchSpriteData();
-			if(this->cycleNum == 257) // hori(v) = hori(t)
+		else {
+			if(this->cycleNum == 257) {
+				this->prevSpritesFound = this->spritesFound;
+				this->prevSprite0IsInSOAM = this->sprite0IsInSOAM;
+				// hori(v) = hori(t)
 				this->currentVramAddr = (this->currentVramAddr & ~0x41F) | (this->tempVramAddr & 0x41F);
+			}
+			this->fetchSpriteData();
 		}
 	} else if(this->scanlineNum == 241 && this->cycleNum == 1) {
 		this->STATUS |= (1 << 7); // Set VBlank flag
@@ -159,30 +163,38 @@ bool PPU::isRendering() {
 
 void PPU::renderDot() {
 	this->chosenSpritePixelIndex = -1;
+	this->chosenSpritePixelColor = 0;
+	this->chosenSpritePixelIsBehindBG = 1;
 	if(this->isRenderingSprites() && (((this->MASK >> 2) & 0x1) || this->cycleNum > 8)) {
 		this->selectSpritePixel();
 	}
 	// Background Data - fineXScroll is already 15 - fineXScroll
-	uint8_t lowAttrBit = (this->lowBGAttrShiftReg >> this->fineXScroll) & 0x1;
-	uint8_t highAttrBit = (this->highBGAttrShiftReg >> this->fineXScroll) & 0x1;
-	uint8_t lowBGBit  = (this->lowBGShiftReg  >> this->fineXScroll) & 0x1;
-	uint8_t highBGBit = (this->highBGShiftReg >> this->fineXScroll) & 0x1;
-	uint8_t bgPaletteNum = (highAttrBit << 1) | lowAttrBit;
-	uint8_t bgColorNum = (highBGBit << 1) | lowBGBit;
-	if(!this->isRenderingBG() || !(((this->MASK >> 1) & 0x1) || this->cycleNum > 8)) bgColorNum = 0;
+	uint8_t bgPaletteNum;
+	uint8_t bgColorNum;
+	if(!this->isRenderingBG() || !(((this->MASK >> 1) & 0x1) || this->cycleNum > 8)) bgPaletteNum = bgColorNum = 0;
+	else {
+		uint8_t lowAttrBit = (this->lowBGAttrShiftReg >> this->fineXScroll) & 0x1;
+		uint8_t highAttrBit = (this->highBGAttrShiftReg >> this->fineXScroll) & 0x1;
+		uint8_t lowBGBit = (this->lowBGShiftReg >> this->fineXScroll) & 0x1;
+		uint8_t highBGBit = (this->highBGShiftReg >> this->fineXScroll) & 0x1;
+		bgPaletteNum = (highAttrBit << 1) | lowAttrBit;
+		bgColorNum = (highBGBit << 1) | lowBGBit;
+	}
 	// Priority Multiplexer Decision
 	uint8_t color;
-	if(this->chosenSpritePixelIndex == -1) {
+	if(this->chosenSpritePixelColor == 0) {
 		color = this->getBGColor(bgPaletteNum, bgColorNum);
-	} else {
-		// Sprite Data
-		uint8_t spritePaletteNum = this->spriteAttrs[this->chosenSpritePixelIndex] & 0x3;
+	} else  {
 		uint8_t spriteColorNum = this->chosenSpritePixelColor;
-		bool spriteIsBehindBG = (this->spriteAttrs[this->chosenSpritePixelIndex] >> 5) & 0x1;
-		if(bgColorNum == 0 || !spriteIsBehindBG) color = this->getSpriteColor(spritePaletteNum, spriteColorNum);
-		else color = this->getBGColor(bgPaletteNum, bgColorNum);
-		if(this->chosenSpritePixelIndex == 0 && this->sprite0IsInSOAM && spriteColorNum != 0 && bgColorNum != 0 &&
-			!this->sprite0Hit && this->cycleNum != 255 + 1) {
+		if(!this->chosenSpritePixelIsBehindBG || bgColorNum == 0) {
+			uint8_t spritePaletteNum = this->spriteAttrs[this->chosenSpritePixelIndex] & 0x3;
+			color = this->getSpriteColor(spritePaletteNum, spriteColorNum);
+		} else {
+			color = this->getBGColor(bgPaletteNum, bgColorNum);
+		}
+		// Set Sprite 0 Hit based on condition
+		if(this->chosenSpritePixelIndex == 0 && this->prevSprite0IsInSOAM && spriteColorNum != 0 && 
+			bgColorNum != 0 && !this->sprite0Hit && this->cycleNum != 255 + 1) {
 			this->sprite0Hit = true;
 			this->STATUS |= (1 << 6); // Sets bit 6 or Sprite 0 Hit
 		}
@@ -258,7 +270,6 @@ void PPU::evaluateSprites() { // Sprite Evaluation
 
 void PPU::fetchSpriteData() { // Sprite Fetches
 	this->OAMADDR = 0;
-	this->prevSpritesFound = this->spritesFound;
 	int spriteNum = (this->cycleNum - 1) / 8 - 32;
 	if(spriteNum >= this->prevSpritesFound) return;
 	bool is8x16 = (this->CTRL >> 5) & 0x1;
@@ -306,7 +317,6 @@ void PPU::fetchSpriteData() { // Sprite Fetches
 }
 
 void PPU::selectSpritePixel() {
-	this->chosenSpritePixelIndex = -1;
 	for(int i = 0; i < this->prevSpritesFound; i++) {
 		if(this->cycleNum - 1 >= this->spriteXs[i] && this->cycleNum - 1 <= this->spriteXs[i] + 7) {
 			uint8_t low = this->lowSpriteShiftRegs[i] << (this->cycleNum - 1 - this->spriteXs[i]);
@@ -315,14 +325,20 @@ void PPU::selectSpritePixel() {
 			uint8_t lowSpriteBit = (low >> 7) & 0x1;
 			uint8_t highSpriteBit = (high >> 6) & 0x2;
 			uint8_t color = highSpriteBit | lowSpriteBit;
-			int priority = (this->spriteAttrs[i] >> 5) & 0x1;
+			if(color != 0) {
+				this->chosenSpritePixelIndex = i;
+				this->chosenSpritePixelColor = color;
+				this->chosenSpritePixelIsBehindBG = (this->spriteAttrs[i] >> 5) & 0x1;
+				break;
+			}
+			/*int priority = (this->spriteAttrs[i] >> 5) & 0x1;
 			int chosenPriority = 1; // 0 is in front of BG, 1 is behind BG
 			if(this->chosenSpritePixelIndex != -1)
 				chosenPriority = (this->spriteAttrs[this->chosenSpritePixelIndex] >> 5) & 0x1;
-			if((this->chosenSpritePixelIndex == -1 || priority < chosenPriority) && color != 0) {
+			if((this->chosenSpritePixelIndex == -1 || priority < chosenPriority) ) {
 				this->chosenSpritePixelIndex = i;
 				this->chosenSpritePixelColor = color;
-			}
+			}*/
 		}
 	}
 }

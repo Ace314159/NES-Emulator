@@ -3,7 +3,7 @@
 
 
 void MMC1::wroteRAM8(uint16_t addr, uint8_t data) {
-	if(this->cycleCount - this->prevCycleCount <= 1) return;
+	if(this->CPUcycleCount - this->prevCPUCycleCount <= 1) return;
 	if(data >> 7) {
 		this->shiftRegCount = 0;
 		this->shiftReg = 0;
@@ -37,7 +37,7 @@ void MMC1::wroteRAM8(uint16_t addr, uint8_t data) {
 			this->shiftRegCount = 0;
 		}
 	}
-	this->prevCycleCount = this->cycleCount;
+	this->prevCPUCycleCount = this->CPUcycleCount;
 }
 
 uint8_t MMC1::getPRGBank(uint16_t& addr) {

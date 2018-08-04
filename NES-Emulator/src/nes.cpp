@@ -6,6 +6,7 @@ NES::NES(std::string romFileName) { loadRom(romFileName); }
 
 void NES::tick() {
 	this->cpu.emulateCycle();
+	this->mem.mapper->CPUcycleCount++;
 
 	this->ppu.emulateAferCPU();
 	this->ppu.emulateDot();
@@ -15,8 +16,6 @@ void NES::tick() {
 	this->apu.emulateCycle();
 
 	this->handleInput();
-
-	this->mem.mapper->cycleCount++;
 }
 
 void NES::loadRom(std::string romFileName) {

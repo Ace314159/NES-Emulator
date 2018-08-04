@@ -44,10 +44,12 @@ public:
 	std::array<uint8_t, 8> highSpriteShiftRegs;
 	std::array<uint8_t, 8> spriteAttrs;
 	std::array<int, 8> spriteXs;
+	bool prevSprite0IsInSOAM;
 	bool sprite0IsInSOAM;
 	bool sprite0Hit;
 	int chosenSpritePixelIndex = -1;
 	uint8_t chosenSpritePixelColor;
+	uint8_t chosenSpritePixelIsBehindBG; // Sprite Priority
 	bool spriteEvaluationDone;
 	//Temp Data
 	uint8_t tileNum = 0;

@@ -17,8 +17,8 @@ public:
 	std::array<uint8_t, 0x0020> palette{};      // 0x3F00 - 0x3F1F
 
 	// Useful Variables
-	unsigned int cycleCount = 0;
-	unsigned prevCycleCount;
+	unsigned int CPUcycleCount = 0;
+	unsigned prevCPUCycleCount;
 	iNESHeader header;
 
 
