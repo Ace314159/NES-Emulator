@@ -25,6 +25,12 @@ void APU::handleRegisterReads() {
 
 void APU::handleRegisterWrites() {
 	switch(this->registerWritten) {
+	case 0x4001:
+		this->pulse1.sweepReloadFlag = true;
+		break;
+	case 0x4005:
+		this->pulse2.sweepReloadFlag = true;
+		break;
 	case 0x4003:
 		this->pulse1.dutyCyclePositon = 0;
 		this->pulse1.envelopeStartFlag = true;
@@ -34,6 +40,7 @@ void APU::handleRegisterWrites() {
 		this->pulse2.dutyCyclePositon = 0;
 		this->pulse2.envelopeStartFlag = true;
 		if(this->pulse2.enabled) this->pulse2.loadLengthCounter();
+		break;
 	case 0x4015:
 		this->pulse1.enabled = (this->status >> 0) & 0x1;
 		this->pulse2.enabled = (this->status >> 1) & 0x1;
@@ -97,7 +104,7 @@ void APU::quarterFrame() {
 void APU::halfFrame() {
 	this->quarterFrame();
 	this->pulse1.halfFrame();
-	this->pulse2.quarterFrame();
+	this->pulse2.halfFrame();
 }
 
 void APU::changeIRQ() {

@@ -3,9 +3,10 @@
 #include "audio.h"
 
 class Channel {
+private:
+	uint8_t* registerStart;
 protected:
 	Channel(uint8_t* registerStart);
-	uint8_t* registerStart;
 public:
 	// Register Functions
 	uint8_t getLengthCounter() { return registerStart[3] >> 3; };
