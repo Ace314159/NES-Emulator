@@ -90,8 +90,6 @@ void Memory::setRAM8(uint16_t addr, uint8_t data) {
 		addrValue = data;
 		break;
 	case RAMAddrType::PPU_REGISTER:
-		this->mapper->writeCycleDone = true;
-		// || (addr == 0x2000 && this->ppuMem.canWrite)) // Can't write to 0x2000 for first 3000 
 		if(addr == 0x2002 || (addr == 0x2004 && this->scanlineNum < 240 && (this->ppuRegisters[1] >> 3) & 0x3))
 			return;
 		addrValue = this->cpuPpuBus = data;
@@ -119,24 +117,34 @@ void Memory::setRAM8(uint16_t addr, uint8_t data) {
 
 
 // PPU
+uint8_t& Memory::getNametableLoc(uint16_t offsettedAddr) {
+	return *this->mapper->nametablePtrs[offsettedAddr];
+}
+
+uint8_t& Memory::getCHRLoc(uint16_t addr) {
+	size_t bank = this->mapper->getCHRBank(addr); // Offsets addr
+	size_t bankSize = this->mapper->getCHRBankSize();
+	return this->CHR[bank * bankSize + addr];
+}
+
+uint8_t& Memory::getPaletteLoc(uint16_t offsettedAddr) {
+	return this->mapper->palette[offsettedAddr];
+}
+
 uint8_t& Memory::getVRAMLoc(uint16_t addr) {
 	addr %= 0x4000;
 	// Pattern Tables
-	if(addr < 0x2000) {
-		size_t bank = this->mapper->getCHRBank(addr); // Offsets addr
-		size_t bankSize = this->mapper->getCHRBankSize();
-		return this->CHR[bank * bankSize + addr];
-	}
+	if(addr < 0x2000) return this->getCHRLoc(addr);
 
 	// Nametables
 	if(addr >= 0x3000 && addr < 0x3F00) addr &= ~0x1000;
-	if(addr < 0x3000) return *this->mapper->nametablePtrs[addr - 0x2000];
+	if(addr < 0x3000) return this->getNametableLoc(addr - 0x2000);
 
 	// Palette
 	if(addr < 0x4000) addr &= 0x3F1F;
 	if(addr >= 0x3F10 && addr <= 0x3F1C && addr % 4 == 0) addr &= 0xFF0F;
 	assert(addr < 0x4000);
-	return this->mapper->palette[addr - 0x3F00];
+	return this->getPaletteLoc(addr - 0x3F00);
 }
 
 uint8_t Memory::getVRAM8(uint16_t addr) {

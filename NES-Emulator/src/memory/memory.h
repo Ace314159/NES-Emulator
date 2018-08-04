@@ -50,6 +50,9 @@ public:
 
 	// PPU
 	// Main
+	uint8_t& getNametableLoc(uint16_t offsettedAddr);
+	uint8_t& getCHRLoc(uint16_t addr);
+	uint8_t& getPaletteLoc(uint16_t offsettedAddr);
 	uint8_t& getVRAMLoc(uint16_t addr); // Gets memory location from mapper
 	std::array<uint8_t, 0x100> OAM = {}; // Object Attribute Memory
 	uint8_t getVRAM8(uint16_t addr);

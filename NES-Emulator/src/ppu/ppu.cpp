@@ -158,7 +158,7 @@ bool PPU::isRenderingSprites() {
 }
 
 bool PPU::isRendering() {
-	return this->isRenderingBG() || this->isRenderingSprites();
+	return (this->MASK >> 3) & 0x3;
 }
 
 void PPU::renderDot() {
@@ -219,11 +219,11 @@ void PPU::fetchBGData() {
 		}
 		break;
 	case 2: // NT Byte
-		this->tileNum = mem.getVRAM8(0x2000 | (v & 0x0FFF));
+		this->tileNum = mem.getNametableLoc(v & 0x0FFF);
 		break;
 	case 4: // AT Byte
 		{
-		uint8_t atByte = mem.getVRAM8(0x23C0 | (v & 0x0C00) | ((v >> 4) & 0x38) | ((v >> 2) & 0x07));
+		uint8_t atByte = mem.getNametableLoc(0x03C0 | (v & 0x0C00) | ((v >> 4) & 0x38) | ((v >> 2) & 0x07));
 		uint8_t yBit = (v & 0x40) >> 5; // Bit 1 of coarse y in pos 1
 		uint8_t xBit = (v & 0x2) >> 1; // Bit 1 of carse x
 		// yx is used to select the corresponding 2 bits from the attribute byte
@@ -231,10 +231,10 @@ void PPU::fetchBGData() {
 		}
 		break;
 	case 6: // Low BG Tile Byte
-		this->lowTileByte = mem.getVRAM8(bgPage | (this->tileNum << 4) | fineY);
+		this->lowTileByte = mem.getCHRLoc(bgPage | (this->tileNum << 4) | fineY);
 		break;
 	case 0: // High BG Tile Byte
-		this->highTileByte = mem.getVRAM8(bgPage | (this->tileNum << 4) | 0x8 | fineY);
+		this->highTileByte = mem.getCHRLoc(bgPage | (this->tileNum << 4) | 0x8 | fineY);
 		break;
 	}
 }
@@ -295,13 +295,13 @@ void PPU::fetchSpriteData() { // Sprite Fetches
 		this->spriteXs[spriteNum] = this->secondaryOAM[spriteNum * 4 + 3];
 		break;
 	case 6: // Low Sprite Tile Byte
-		this->lowTileByte = mem.getVRAM8(spritePage | (this->tileNum << 4) | fineY);
+		this->lowTileByte = mem.getCHRLoc(spritePage | (this->tileNum << 4) | fineY);
 		if(((this->spriteAttrs[spriteNum] >> 6) & 0x1) == 1) 
 			this->lowTileByte = this->BitReverseTable[this->lowTileByte];
 		this->lowSpriteShiftRegs[spriteNum] = this->lowTileByte;
 		break;
 	case 0: // Hgih Sprite Tile Byte
-		this->highTileByte = mem.getVRAM8(spritePage | (this->tileNum << 4) | 0x8 | fineY);
+		this->highTileByte = mem.getCHRLoc(spritePage | (this->tileNum << 4) | 0x8 | fineY);
 		if(((this->spriteAttrs[spriteNum] >> 6) & 0x1) == 1)
 			this->highTileByte = this->BitReverseTable[this->highTileByte];
 		this->highSpriteShiftRegs[spriteNum] = this->highTileByte;
@@ -364,19 +364,19 @@ void PPU::incrementScrollY() {
 uint8_t PPU::getBGColor(uint8_t paletteNum, uint8_t colorNum) {
 	uint8_t color;
 	if(this->isRenderingBG()) {
-		if(colorNum == 0) color = mem.getVRAM8(0x3F00);
-		else color = mem.getVRAM8(0x3F00 | (paletteNum << 2) | colorNum);
+		if(colorNum == 0) color = mem.getPaletteLoc(0);
+		else color = mem.getPaletteLoc((paletteNum << 2) | colorNum);
 	} else {
 		if(this->currentVramAddr >= 0x3F00 && this->currentVramAddr <= 0x3FFF) 
-			color = mem.getVRAM8(this->currentVramAddr);
-		color = mem.getVRAM8(0x3F00);
+			color = mem.getPaletteLoc(this->currentVramAddr - 0x3F00);
+		color = mem.getPaletteLoc(0);
 	}
 	return color;
 }
 
 uint8_t PPU::getSpriteColor(uint8_t paletteNum, uint8_t colorNum) {
 	assert(colorNum != 0);
-	uint8_t color = mem.getVRAM8(0x3F10 | (paletteNum << 2) | colorNum);
+	uint8_t color = mem.getPaletteLoc(0x0010 | (paletteNum << 2) | colorNum);
 	return color;
 }
 
