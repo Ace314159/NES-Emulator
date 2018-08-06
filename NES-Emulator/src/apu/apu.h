@@ -3,6 +3,7 @@
 #include "memory/memory.h"
 #include "pulse.h"
 #include "triangle.h"
+#include "noise.h"
 
 
 class APU {
@@ -23,9 +24,10 @@ public:
 	uint16_t& registerWritten = mem.apuRegisterWritten;
 
 	// Channels
-	Pulse pulse1{mem.apuRegisters.data() + 0, false};
-	Pulse pulse2{mem.apuRegisters.data() + 4, true};
-	Triangle triangle{mem.apuRegisters.data() + 8};
+	Pulse pulse1{mem.apuRegisters.data() + 0x0, false};
+	Pulse pulse2{mem.apuRegisters.data() + 0x4, true};
+	Triangle triangle{mem.apuRegisters.data() + 0x8};
+	Noise noise{mem.apuRegisters.data() + 0xC};
 
 	void emulateCycle();
 

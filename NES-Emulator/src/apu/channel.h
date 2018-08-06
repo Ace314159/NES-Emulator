@@ -11,7 +11,7 @@ public:
 	// Register Functions
 	uint8_t lengthCounterReload() { return registerStart[3] >> 3; };
 	uint8_t timerHigh() { return registerStart[3] & 0x7; };
-	uint16_t timer() { return registerStart[2] | (timerHigh() << 8); };
+	virtual uint16_t timer() { return registerStart[2] | (timerHigh() << 8); };
 	virtual uint8_t volume() = 0;
 	virtual bool lengthCounterHalt() = 0;
 	virtual bool constantVolume() = 0;

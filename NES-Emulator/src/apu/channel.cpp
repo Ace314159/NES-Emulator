@@ -13,6 +13,5 @@ void Channel::loadLengthCounter() {
 }
 
 void Channel::halfFrame() {
-	cout << lengthCounterHalt() << endl;
 	if(this->lengthCounter != 0 && !this->lengthCounterHalt()) this->lengthCounter--;
 }

@@ -170,6 +170,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\apu\noise.h" />
     <ClInclude Include="src\apu\pulse.h" />
     <ClInclude Include="src\apu\channel.h" />
     <ClInclude Include="src\apu\apu.h" />
@@ -193,6 +194,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="src\apu\noise.cpp" />
     <ClCompile Include="src\apu\channel.cpp" />
     <ClCompile Include="src\apu\pulse.cpp" />
     <ClCompile Include="src\apu\apu.cpp" />

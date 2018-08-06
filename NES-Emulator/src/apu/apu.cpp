@@ -13,6 +13,7 @@ void APU::emulateCycle() {
 	if(this->mem.cycleNum % 2 == 0) {
 		this->pulse1.emulateCycle();
 		this->pulse2.emulateCycle();
+		this->noise.emulateCycle();
 	}
 	this->triangle.emulateCycle();
 	this->queueAudio();
@@ -47,10 +48,16 @@ void APU::handleRegisterWrites() {
 		this->triangle.linearCounterReloadFlag = true;
 		this->triangle.loadLengthCounter();
 		break;
+	// Noise
+	case 0x400F:
+		this->noise.envelopeStartFlag = true;
+		this->noise.loadLengthCounter();
+		break;
 	case 0x4015:
 		this->pulse1.enabled = (this->status >> 0) & 0x1;
 		this->pulse2.enabled = (this->status >> 1) & 0x1;
 		this->triangle.enabled = (this->status >> 2) & 0x1;
+		this->noise.enabled = (this->status >> 3) & 0x1;
 		break;
 	}
 	this->registerWritten = 0;
@@ -107,6 +114,7 @@ void APU::quarterFrame() {
 	this->pulse1.quarterFrame();
 	this->pulse2.quarterFrame();
 	this->triangle.quarterFrame();
+	this->noise.quarterFrame();
 }
 
 void APU::halfFrame() {
@@ -114,6 +122,7 @@ void APU::halfFrame() {
 	this->pulse1.halfFrame();
 	this->pulse2.halfFrame();
 	this->triangle.halfFrame();
+	this->noise.halfFrame();
 }
 
 void APU::changeIRQ() {
@@ -130,7 +139,8 @@ void APU::fillLookupTables() {
 
  double APU::generateSample() {
 	 double pulseOut = this->pulseTable[this->pulse1.generateSample() + this->pulse2.generateSample()];
-	 double tndOut = this->tndTable[3 * this->triangle.generateSample()];
+	 double tndOut = this->tndTable[3 * this->triangle.generateSample() +
+									2 * this->noise.generateSample()];
 	 return pulseOut + tndOut;
 }
 
