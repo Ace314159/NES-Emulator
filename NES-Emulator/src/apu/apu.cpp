@@ -10,13 +10,12 @@ void APU::emulateCycle() {
 
 	this->emulateFrameCounter();
 
-	if(this->evenCycle) {
+	if(this->mem.cycleNum % 2 == 0) {
 		this->pulse1.emulateCycle();
 		this->pulse2.emulateCycle();
 	}
+	this->triangle.emulateCycle();
 	this->queueAudio();
-
-	this->evenCycle = !this->evenCycle;
 }
 
 void APU::handleRegisterReads() {
@@ -25,25 +24,33 @@ void APU::handleRegisterReads() {
 
 void APU::handleRegisterWrites() {
 	switch(this->registerWritten) {
+	// Pulse 1
 	case 0x4001:
 		this->pulse1.sweepReloadFlag = true;
-		break;
-	case 0x4005:
-		this->pulse2.sweepReloadFlag = true;
 		break;
 	case 0x4003:
 		this->pulse1.dutyCyclePositon = 0;
 		this->pulse1.envelopeStartFlag = true;
-		if(this->pulse1.enabled) this->pulse1.loadLengthCounter();
+		this->pulse1.loadLengthCounter();
+		break;
+	// Pulse 2
+	case 0x4005:
+		this->pulse2.sweepReloadFlag = true;
 		break;
 	case 0x4007:
 		this->pulse2.dutyCyclePositon = 0;
 		this->pulse2.envelopeStartFlag = true;
-		if(this->pulse2.enabled) this->pulse2.loadLengthCounter();
+		this->pulse2.loadLengthCounter();
+		break;
+	// Triangle
+	case 0x400B:
+		this->triangle.linearCounterReloadFlag = true;
+		this->triangle.loadLengthCounter();
 		break;
 	case 0x4015:
 		this->pulse1.enabled = (this->status >> 0) & 0x1;
 		this->pulse2.enabled = (this->status >> 1) & 0x1;
+		this->triangle.enabled = (this->status >> 2) & 0x1;
 		break;
 	}
 	this->registerWritten = 0;
@@ -99,12 +106,14 @@ void APU::emulateFrameCounter() {
 void APU::quarterFrame() {
 	this->pulse1.quarterFrame();
 	this->pulse2.quarterFrame();
+	this->triangle.quarterFrame();
 }
 
 void APU::halfFrame() {
 	this->quarterFrame();
 	this->pulse1.halfFrame();
 	this->pulse2.halfFrame();
+	this->triangle.halfFrame();
 }
 
 void APU::changeIRQ() {
@@ -121,7 +130,8 @@ void APU::fillLookupTables() {
 
  double APU::generateSample() {
 	 double pulseOut = this->pulseTable[this->pulse1.generateSample() + this->pulse2.generateSample()];
-	 return pulseOut;
+	 double tndOut = this->tndTable[3 * this->triangle.generateSample()];
+	 return pulseOut + tndOut;
 }
 
 void APU::queueAudio() {

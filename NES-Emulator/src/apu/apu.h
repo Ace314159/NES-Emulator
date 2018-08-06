@@ -2,6 +2,7 @@
 
 #include "memory/memory.h"
 #include "pulse.h"
+#include "triangle.h"
 
 
 class APU {
@@ -17,7 +18,6 @@ public:
 	uint8_t& frameCounter = mem.apuRegisters[0x17];
 
 	// Useful Variables
-	bool evenCycle = true;
 	unsigned int frameCounterCycle = 0;
 	uint16_t& registerRead = mem.apuRegisterRead;
 	uint16_t& registerWritten = mem.apuRegisterWritten;
@@ -25,6 +25,7 @@ public:
 	// Channels
 	Pulse pulse1{mem.apuRegisters.data() + 0, false};
 	Pulse pulse2{mem.apuRegisters.data() + 4, true};
+	Triangle triangle{mem.apuRegisters.data() + 8};
 
 	void emulateCycle();
 

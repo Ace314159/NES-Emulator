@@ -17,11 +17,11 @@ public:
 	// Get Registers Values
 	// DLCV
 	uint8_t dutyCycle() { return DLCV >> 6; };
+	bool lengthCounterHalt() { return (this->DLCV >> 5) & 0x1; };
+	bool envelopeLoop() { return this->lengthCounterHalt(); };
+	bool constantVolume() override { return (this->DLCV >> 4) & 0x1; };
+	uint8_t volume() override { return this->DLCV & 0xF; };
 	// Others are from Channel
-	// LCLTH
-	uint8_t lengthCounterLoad() { return LCLTH >> 3; };
-	uint8_t timerHigh() { return LCLTH & 0x7; };
-	uint16_t timer() { return timerLow | (timerHigh() << 8); };
 	// Sweep
 	bool sweepEnabled() { return sweep >> 7; };
 
@@ -30,6 +30,10 @@ public:
 	uint8_t dutyCyclePositon;
 	static const std::array<std::array<bool, 8>, 4> dutyCycleSequences;
 	uint16_t timerDividerCounter;
+	// Envelope
+	bool envelopeStartFlag = false;
+	uint8_t decayLevelCounter = 0;
+	uint8_t envelopeDividerCounter = 0;
 	// Sweep
 	uint8_t sweepDividerCounter;
 	bool sweepReloadFlag;
@@ -37,6 +41,8 @@ public:
 	// Channel Functions
 	void emulateCycle() override;
 	uint8_t generateSample() override;
+	uint8_t getVolume() override;
+	void quarterFrame() override;
 	void halfFrame() override;
 
 	// Useful Functions

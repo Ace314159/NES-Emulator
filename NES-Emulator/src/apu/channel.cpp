@@ -9,28 +9,10 @@ const std::array<uint8_t, 0x20> Channel::lengthCounterTable{{10, 254, 20, 2, 40,
 
 // Common Functions
 void Channel::loadLengthCounter() {
-	if(this->enabled) this->lengthCounter = this->lengthCounterTable[this->getLengthCounter()];
-}
-
-uint8_t Channel::getVolume() {
-	if(constantVolume()) return volume();
-	else return this->decayLevelCounter;
-}
-
-void Channel::quarterFrame() {
-	if(this->envelopeStartFlag) {
-		this->envelopeStartFlag = false;
-		this->decayLevelCounter = 15;
-		this->envelopeDividerCounter = this->volume();
-	} else {
-		if(this->envelopeDividerCounter == 0) {
-			this->envelopeDividerCounter = this->volume();
-			if(this->decayLevelCounter != 0) this->decayLevelCounter--;
-			else if(this->envelopeLoop()) this->decayLevelCounter = 15;
-		} else this->envelopeDividerCounter--;
-	}
+	if(this->enabled) this->lengthCounter = this->lengthCounterTable[this->lengthCounterReload()];
 }
 
 void Channel::halfFrame() {
-	if(this->lengthCounter != 0 && !this->haltLengthCounter()) this->lengthCounter--;
+	cout << lengthCounterHalt() << endl;
+	if(this->lengthCounter != 0 && !this->lengthCounterHalt()) this->lengthCounter--;
 }

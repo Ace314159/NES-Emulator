@@ -28,11 +28,29 @@ uint8_t Pulse::generateSample() {
 	return this->getVolume() * this->dutyCycleSequences[this->dutyCycle()][this->dutyCyclePositon];
 }
 
+uint8_t Pulse::getVolume() {
+	if(constantVolume()) return volume();
+	else return this->decayLevelCounter;
+}
+
+void Pulse::quarterFrame() {
+	if(this->envelopeStartFlag) {
+		this->envelopeStartFlag = false;
+		this->decayLevelCounter = 15;
+		this->envelopeDividerCounter = this->volume();
+	} else {
+		if(this->envelopeDividerCounter == 0) {
+			this->envelopeDividerCounter = this->volume();
+			if(this->decayLevelCounter != 0) this->decayLevelCounter--;
+			else if(this->envelopeLoop()) this->decayLevelCounter = 15;
+		} else this->envelopeDividerCounter--;
+	}
+}
+
 void Pulse::halfFrame() {
 	// Length Counter
 	Channel::halfFrame();
 	// Sweep
-	//cout << "ENABLED " << (int)(this->sweep) << endl;
 	if(this->sweepDividerCounter == 0 && this->sweepEnabled() && !this->sweepMuted()) {
 		uint16_t targetPeriod = this->getTargetPeriod();
 		this->timerLow = targetPeriod & 0xff;

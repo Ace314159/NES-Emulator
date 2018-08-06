@@ -9,22 +9,17 @@ protected:
 	Channel(uint8_t* registerStart);
 public:
 	// Register Functions
-	uint8_t getLengthCounter() { return registerStart[3] >> 3; };
-	uint8_t volume() { return this->registerStart[0] & 0xF; };
-	bool envelopeLoop() { return (this->registerStart[0] >> 5) & 0x1; };
-	bool haltLengthCounter() { return this->envelopeLoop(); };
-	bool constantVolume() { return (this->registerStart[0] >> 4) & 0x1; };
-
-	// Frame Counter
-	// Quarter - Envelope
-	bool envelopeStartFlag = false;
-	uint8_t decayLevelCounter = 0;
-	uint8_t envelopeDividerCounter = 0;
+	uint8_t lengthCounterReload() { return registerStart[3] >> 3; };
+	uint8_t timerHigh() { return registerStart[3] & 0x7; };
+	uint16_t timer() { return registerStart[2] | (timerHigh() << 8); };
+	virtual uint8_t volume() = 0;
+	virtual bool lengthCounterHalt() = 0;
+	virtual bool constantVolume() = 0;
 	
 	// Common Functions
 	void loadLengthCounter();
-	uint8_t getVolume();
-	void quarterFrame();
+	virtual uint8_t getVolume() = 0;
+	virtual void quarterFrame() = 0;
 	virtual void halfFrame();
 
 	// Functions all channels should implement

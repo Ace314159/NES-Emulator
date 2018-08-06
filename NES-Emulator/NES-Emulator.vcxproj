@@ -184,6 +184,7 @@
     <ClInclude Include="src\nes.h" />
     <ClInclude Include="src\ppu\ppu.h" />
     <ClInclude Include="src\stdafx.h" />
+    <ClInclude Include="src\apu\triangle.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="glad.c">
@@ -213,6 +214,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="src\apu\triangle.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
