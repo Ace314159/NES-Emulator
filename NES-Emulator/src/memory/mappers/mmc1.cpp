@@ -2,6 +2,10 @@
 #include "mmc1.h"
 
 
+bool MMC1::canWriteRAM8(uint16_t addr) {
+	return false;
+}
+
 void MMC1::wroteRAM8(uint16_t addr, uint8_t data) {
 	if(this->CPUcycleCount - this->prevCPUCycleCount <= 1) return;
 	if(data >> 7) {

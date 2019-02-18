@@ -23,6 +23,7 @@ public:
 
 
 	// Useful Functions
+	virtual bool canWriteRAM8(uint16_t addr) = 0;
 	virtual void wroteRAM8(uint16_t addr, uint8_t data) = 0;
 	virtual uint8_t getPRGBank(uint16_t& addr) = 0; // Is reference in order to offset addr when accessing PRG ROM
 	virtual uint16_t getPRGBankSize() = 0;

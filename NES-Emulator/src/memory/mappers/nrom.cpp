@@ -2,6 +2,10 @@
 #include "nrom.h"
 
 
+bool NROM::canWriteRAM8(uint16_t addr) {
+	return false;
+}
+
 void NROM::wroteRAM8(uint16_t addr, uint8_t data) {
 	return;
 }

@@ -104,7 +104,7 @@ void Memory::setRAM8(uint16_t addr, uint8_t data) {
 		addrValue = data;
 		break;
 	case RAMAddrType::CARTRIDGE:
-		addrValue = data;
+		if(this->mapper->canWriteRAM8(addr)) addrValue = data;
 		this->mapper->wroteRAM8(addr, data);
 		break;
 	default:
