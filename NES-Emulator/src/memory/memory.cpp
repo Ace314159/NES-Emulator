@@ -38,24 +38,21 @@ uint8_t Memory::getRAM8(uint16_t addr) {
 		switch(addr) {
 		case 0x2002:
 			this->ppuRegisterRead = 0x2002;
-			return addrValue = (addrValue & ~0x1F) | (this->cpuPpuBus & 0x1F);
+			this->cpuPpuBus = addrValue = (addrValue & ~0x1F) | (this->cpuPpuBus & 0x1F);
 			break;
 		case 0x2004:
 			//this->ppuRegisterRead = 0x2004; // Doesn't do anything
-			return this->OAM[this->ppuRegisters[0x3]]; // Gets OAM data at OAMADDR
+			this->cpuPpuBus = this->OAM[this->ppuRegisters[0x3]]; // Gets OAM data at OAMADDR
 			break;
 		case 0x2007:
 			this->ppuRegisterRead = 0x2007;
-			if(this->currentVramAddr <= 0x3EFF) return this->ppuDATAReadBuffer;
-			else {
-				this->ppuDATAReadBuffer = this->getVRAM8(this->currentVramAddr & ~0x1000 & 0x3FFF);
-				return this->getVRAM8(this->currentVramAddr & 0x3FFF);
-			}
+			if(this->currentVramAddr <= 0x3EFF) this->cpuPpuBus = this->ppuDATAReadBuffer;
+			else this->cpuPpuBus = this->getPaletteLoc(this->currentVramAddr - 0x3F00);
 			break;
-		default: // PPU Write Only Registers
-			return this->cpuPpuBus;
+		default:
 			break;
 		}
+		return this->cpuPpuBus;
 		break;
 	case RAMAddrType::APU_REGISTER:
 		if(addr == 0x4016) { // Controller 1
@@ -88,9 +85,9 @@ void Memory::setRAM8(uint16_t addr, uint8_t data) {
 		addrValue = data;
 		break;
 	case RAMAddrType::PPU_REGISTER:
+		addrValue = this->cpuPpuBus = data;
 		if(addr == 0x2002 || (addr == 0x2004 && this->scanlineNum < 240 && (this->ppuRegisters[1] >> 3) & 0x3))
 			return;
-		addrValue = this->cpuPpuBus = data;
 		this->ppuRegisterWritten = addr;
 		// Set low 5 bits of PPUSTATUS - TODO: Find better way
 		this->ppuRegisters[0x2] = (this->ppuRegisters[0x2] & ~0x1F) | (this->cpuPpuBus & 0x1F);
@@ -103,6 +100,7 @@ void Memory::setRAM8(uint16_t addr, uint8_t data) {
 		addrValue = data;
 		break;
 	case RAMAddrType::CARTRIDGE:
+		assert(addr >= 0x8000);
 		if(this->mapper->canWriteRAM8(addr)) addrValue = data;
 		this->mapper->wroteRAM8(addr, data);
 		break;

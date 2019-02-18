@@ -5,6 +5,7 @@
 PPU::PPU(Memory& m) : mem(m) { this->initPaletteTable("../res/Nintendulator-NTSC.pal"); }
 
 void PPU::emulateAferCPU() {
+	assert(!(this->registerRead && this->registerWritten));
 	if(this->registerRead) this->handleRegisterReads();
 	else if(this->registerWritten) this->handleRegisterWrites();
 
