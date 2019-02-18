@@ -42,7 +42,6 @@ uint8_t Memory::getRAM8(uint16_t addr) {
 			break;
 		case 0x2004:
 			//this->ppuRegisterRead = 0x2004; // Doesn't do anything
-			if(this->cycleNum >= 1 && this->cycleNum <= 65) return 0xFF;
 			return this->OAM[this->ppuRegisters[0x3]]; // Gets OAM data at OAMADDR
 			break;
 		case 0x2007:
@@ -126,6 +125,9 @@ uint8_t& Memory::getCHRLoc(uint16_t addr) {
 }
 
 uint8_t& Memory::getPaletteLoc(uint16_t offsettedAddr) {
+	if(offsettedAddr < 0x4000 - 0x3F00) offsettedAddr &= 0x3F1F - 0x3F00;
+	if(offsettedAddr >= 0x3F10 - 0x3F00 && offsettedAddr <= 0x3F1C - 0x3F00 && offsettedAddr % 4 == 0)
+		offsettedAddr &= 0xFF0F - 0x3F00;
 	return this->mapper->palette[offsettedAddr];
 }
 
@@ -139,8 +141,6 @@ uint8_t& Memory::getVRAMLoc(uint16_t addr) {
 	if(addr < 0x3000) return this->getNametableLoc(addr - 0x2000);
 
 	// Palette
-	if(addr < 0x4000) addr &= 0x3F1F;
-	if(addr >= 0x3F10 && addr <= 0x3F1C && addr % 4 == 0) addr &= 0xFF0F;
 	assert(addr < 0x4000);
 	return this->getPaletteLoc(addr - 0x3F00);
 }
