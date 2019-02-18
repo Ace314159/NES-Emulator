@@ -734,7 +734,7 @@ void CPU::RRA() { // Undocumented
 void CPU::RTI() {
 	switch(this->cycleNum - this->addressingCyclesUsed) {
 	case 0:
-		// Doesn't do anything - Not sure?
+		this->mem.getRAM8(this->PC);
 		break;
 	case 1:
 		this->P.byte = (this->stackPull() & ~(1 << 4)) | (1 << 5); // Bits 4(clear) and 5(set) are ignored
@@ -755,7 +755,7 @@ void CPU::RTI() {
 void CPU::RTS() {
 	switch(this->cycleNum - this->addressingCyclesUsed) {
 	case 0:
-		// Doesn't do anything - Not sure?
+		this->mem.getRAM8(this->PC);
 		break;
 	case 1:
 		this->PC = this->stackPull();

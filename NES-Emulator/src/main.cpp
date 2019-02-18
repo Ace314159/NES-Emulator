@@ -6,7 +6,7 @@ int main(int argc, char* argv[]) {
 	// cout << std::hex;
 
 	try {
-		NES nes = NES("Legend of Zelda, The (U) (PRG1) [!].nes");
+		NES nes = NES("cpu_interrupts_v2/cpu_interrupts.nes");
 		while(!glfwWindowShouldClose(nes.ppu.window.window)) {
 			nes.tick();
 		}
