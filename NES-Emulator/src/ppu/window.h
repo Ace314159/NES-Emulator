@@ -10,8 +10,9 @@ class Window {
 private:
 	GLuint screenTexID;
 	GLuint fboID = 0;
-	double prevRenderTime;
+	std::chrono::high_resolution_clock::time_point prevUpdateTitle;
 	double framesPassed;
+	std::chrono::high_resolution_clock::time_point prevFrameTime;
 public:
 	static const int width = 256;
 	static const int height = 240;

@@ -1,14 +1,10 @@
 #include "stdafx.h"
 #include "window.h"
-#include "memory/memory.h"
 
 using std::cout;
 using std::endl;
 
 Window::Window() {
-	double prevRenderTime = glfwGetTime();
-	double framesPassed = 1;
-
 	// Init GLFW
 #ifdef _DEBUG
 	glfwInit();
@@ -45,6 +41,7 @@ Window::Window() {
 	glClearColor(0, 0, 0, 1);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glfwSwapBuffers(window);
+	glfwSwapInterval(0);
 
 	// Screen Texture Setup
 	glGenTextures(1, &screenTexID);
@@ -85,18 +82,27 @@ void Window::renderScreen() {
 		GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 
+	// Wait to ensure correct framerate
+	while(std::chrono::high_resolution_clock::now() < this->prevFrameTime + NTSC_FRAME_PERIOD);
+	// std::this_thread::sleep_until(this->prevFrameTime + NTSC_FRAME_PERIOD);
+	this->prevFrameTime = std::chrono::high_resolution_clock::now();
+
 	// Display to screen
 	glfwSwapBuffers(window);
 	glfwPollEvents();
-	if(glfwGetTime() - prevRenderTime > 1.0) {
-		char buf[14];
-		int fps = (int)((framesPassed / (glfwGetTime() - prevRenderTime)) + 0.5);
-		snprintf(buf, sizeof(buf), "%s - %3d FPS", windowTitle, fps);
+
+	// Update window title
+	auto curTime = std::chrono::high_resolution_clock::now();
+	this->framesPassed++;
+	if(curTime - this->prevUpdateTitle >= std::chrono::seconds(1)) {
+		char buf[128];
+		double interval = std::chrono::duration<double, std::ratio<1, 1>>(curTime - this->prevUpdateTitle).count();
+		double fps = this->framesPassed / interval;
+		snprintf(buf, sizeof(buf), "%s - %f FPS %f", windowTitle, fps,
+			(double)SDL_GetQueuedAudioSize(2) / sizeof(Sint16) / 48000);
 		glfwSetWindowTitle(window, buf);
-		framesPassed = 1;
-		prevRenderTime = glfwGetTime();
-	} else {
-		framesPassed++;
+		this->framesPassed = 0;
+		this->prevUpdateTitle = curTime;
 	}
 }
 

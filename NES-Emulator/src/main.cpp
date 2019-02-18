@@ -3,7 +3,7 @@
 
 
 int main(int argc, char* argv[]) {
-	cout << std::hex;
+	// cout << std::hex;
 
 	try {
 		NES nes = NES("Legend of Zelda, The (U) (PRG1) [!].nes");
