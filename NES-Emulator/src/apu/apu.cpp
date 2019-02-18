@@ -146,10 +146,27 @@ void APU::fillLookupTables() {
 
 void APU::queueAudio() {
 	this->sampleSum += this->generateSample();
-	if(this->cycleCount > this->cyclesPerSample) {
-		Sint16 sample = static_cast<Sint16>(globalVolumeFactor * this->sampleSum / this->cycleCount);
+	this->numSamples++;
+	this->cycleCount++;
+	
+	// Account for latency
+	/*double curTime = glfwGetTime();
+	this->latencySum += (double)SDL_GetQueuedAudioSize(this->audio.device) / sizeof(Sint16) / Audio::sampleRate;
+	this->latencyCount++;
+	if(curTime - this->prevFactorTime > 1) {
+		double latency = this->latencySum / this->latencyCount;
+		if(latency > 0.1) this->factor = 1 + 0.5 * (latency - 0.1);
+		else this->factor = 1;
+		this->prevFactorTime = curTime;
+		this->latencySum = 0;
+		this->latencyCount = 0;
+	}*/
+
+	if(this->cycleCount >= this->cyclesPerSample/* * this->factor*/) {
+		Sint16 sample = static_cast<Sint16>(this->globalVolumeFactor * this->sampleSum / this->numSamples);
 		SDL_QueueAudio(this->audio.device, &sample, sizeof(sample));
-		this->cycleCount = 0;
+		this->cycleCount -= this->cyclesPerSample/* * this->factor*/;
 		this->sampleSum = 0;
-	} else this->cycleCount++;
+		this->numSamples = 0;
+	}
 }

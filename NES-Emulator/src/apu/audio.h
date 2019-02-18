@@ -11,5 +11,5 @@ public:
 	~Audio();
 	
 	SDL_AudioDeviceID device;
-	static const int sampleRate = 44100;
+	static constexpr int sampleRate = 48000;
 };

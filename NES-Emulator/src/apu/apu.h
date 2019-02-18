@@ -44,12 +44,16 @@ public:
 	std::array<double, 31> pulseTable;
 	std::array<double, 203> tndTable;
 	// Downsampling Variables
+	// double prevFactorTime = -1;
+	// double factor = 1;
+	// double latencySum = 0;
+	// int latencyCount = 0;
 	double sampleSum = 0;
-	int cycleCount = 0;
-	const int cyclesPerSample = static_cast<int>(NTSC_FREQ / audio.sampleRate);
-	//Functions
+	double cycleCount = 0;
+	int numSamples = 0;
+	double cyclesPerSample = NTSC_FREQ / Audio::sampleRate;
+	// Functions
 	void fillLookupTables();
 	double generateSample();
 	void queueAudio();
 };
-

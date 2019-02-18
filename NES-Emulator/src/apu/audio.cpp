@@ -1,6 +1,5 @@
 #include "stdafx.h"
 #include "audio.h"
-#include "memory/memory.h"
 
 
 Audio::Audio() {
@@ -12,7 +11,7 @@ Audio::Audio() {
 	this->desiredSpec.freq = this->sampleRate;
 	this->desiredSpec.format = AUDIO_S16SYS;
 	this->desiredSpec.channels = 1;
-	this->desiredSpec.samples = 8192;
+	this->desiredSpec.samples = 1024;
 	this->desiredSpec.callback = NULL;
 	this->desiredSpec.userdata = NULL;
 
