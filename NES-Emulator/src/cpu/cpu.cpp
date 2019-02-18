@@ -285,24 +285,27 @@ void CPU::lastOperationCycle() {
 void CPU::interrupt(uint16_t vectorLocation) {
 	switch(cycleNum - this->addressingCyclesUsed) {
 	case 0:
+		this->mem.getRAM8(this->PC);
+		break;
+	case 1:
 		if(vectorLocation == 0xFFFE) this->PC++; // After BRK go to PC + 2
 		this->stackPush(this->PC >> 8);
 		break;
-	case 1:
+	case 2:
 		this->stackPush(this->PC & 0xff);
 		break;
-	case 2:
+	case 3:
 		// if(vectorLocation == 0xFFFE) this->P.B = 1;
 		this->stackPush((this->P.byte.to_ulong() & 0xff) | (1 << 4)); // Bit 4 is set
 		break;
-	case 3:
+	case 4:
 		this->P.I = 1;
 		this->effectiveAddrLow = mem.getRAM8(vectorLocation); // Low byte of interrupt vector
 		break;
-	case 4:
+	case 5:
 		this->effectiveAddrHigh = mem.getRAM8(vectorLocation + 1); // High byte of interrupt vector
 		break;
-	case 5:
+	case 6:
 		this->PC = this->effectiveAddrLow | (this->effectiveAddrHigh << 8);
 		this->lastOperationCycle();
 		break;
