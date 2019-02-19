@@ -10,7 +10,8 @@ void APU::emulateCycle() {
 
 	this->emulateFrameCounter();
 
-	if(this->mem.cycleNum % 2 == 0) {
+	this->triangle.emulateCycle();
+	if(this->mem.mapper->CPUcycleCount % 2 == 0) {
 		this->pulse1.emulateCycle();
 		this->pulse2.emulateCycle();
 		this->noise.emulateCycle();

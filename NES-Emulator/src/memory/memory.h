@@ -2,11 +2,17 @@
 
 #include "mappers/baseMapper.h"
 
+class CPU;
+class PPU;
+class APU;
 
 class Memory {
 public:
-	Memory(uint16_t& cu, int& scan, int& cyc);
+	Memory(CPU& cpu, PPU& ppu, APU& apu);
 	std::unique_ptr<BaseMapper> mapper;
+	CPU& cpu;
+	PPU& ppu;
+	APU& apu;
 
 	// Cartridge
 	std::array<uint8_t, 0x2000> WRAM; // CPU 0x6000 - 0x7FFF
@@ -31,9 +37,6 @@ public:
 	std::array<bool, 8> buttons2{};
 	uint8_t buttons2Index = 0;
 
-	// Useful Variables
-	int& cycleNum; // CYC in CPU
-
 	// NMI
 	bool NMICalled = false; // PPU Request
 	bool inNMI = false; // CPU Response
@@ -57,10 +60,7 @@ public:
 	uint8_t getVRAM8(uint16_t addr);
 	void setVRAM8(uint16_t addr, uint8_t data);
 
-	// Variables
-	uint16_t& currentVramAddr;
-	int& scanlineNum;
-
+	
 	// Buses between CPU and PPU
 	uint8_t cpuPpuBus = 0;
 	uint8_t ppuDATAReadBuffer = 0;

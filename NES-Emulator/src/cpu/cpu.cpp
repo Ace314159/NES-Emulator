@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "cpu.h"
 
-CPU::CPU(Memory& m, int& cyc, int& scan) : mem(m), CYC(cyc), SL(scan) {}
+CPU::CPU(Memory& m) : mem(m) {}
 
 
 void CPU::emulateCycle() {

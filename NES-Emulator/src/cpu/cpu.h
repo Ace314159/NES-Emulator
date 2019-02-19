@@ -21,11 +21,8 @@ public:
 	};
 
 
-	CPU(Memory& m, int& cyc, int& scan);
+	CPU(Memory& m);
 	Memory& mem;
-
-	int& CYC;
-	int& SL;
 
 	// Registers
 	uint8_t A = 0; // Accumulator

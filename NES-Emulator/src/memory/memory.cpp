@@ -1,7 +1,11 @@
 #include "stdafx.h"
 #include "memory.h"
+#include "cpu/cpu.h"
+#include "ppu/ppu.h"
+#include "apu/apu.h"
 
-Memory::Memory(uint16_t& cu, int& scan, int& cyc) : currentVramAddr(cu), scanlineNum(scan), cycleNum(cyc) {}
+
+Memory::Memory(CPU& cpu, PPU& ppu, APU& apu) : cpu(cpu), ppu(ppu), apu(apu) {}
 
 // CPU
 // Main
@@ -46,8 +50,8 @@ uint8_t Memory::getRAM8(uint16_t addr) {
 			break;
 		case 0x2007:
 			this->ppuRegisterRead = 0x2007;
-			if(this->currentVramAddr <= 0x3EFF) this->cpuPpuBus = this->ppuDATAReadBuffer;
-			else this->cpuPpuBus = this->getPaletteLoc(this->currentVramAddr - 0x3F00);
+			if(this->ppu.currentVramAddr <= 0x3EFF) this->cpuPpuBus = this->ppuDATAReadBuffer;
+			else this->cpuPpuBus = this->getPaletteLoc(this->ppu.currentVramAddr - 0x3F00);
 			break;
 		default:
 			break;
@@ -86,7 +90,7 @@ void Memory::setRAM8(uint16_t addr, uint8_t data) {
 		break;
 	case RAMAddrType::PPU_REGISTER:
 		this->cpuPpuBus = data;
-		if(addr == 0x2002 || (addr == 0x2004 && this->scanlineNum < 240 && (this->ppuRegisters[1] >> 3) & 0x3))
+		if(addr == 0x2002 || (addr == 0x2004 && this->ppu.scanlineNum < 240 && (this->ppuRegisters[1] >> 3) & 0x3))
 			return;
 		addrValue = this->cpuPpuBus;
 		this->ppuRegisterWritten = addr;
