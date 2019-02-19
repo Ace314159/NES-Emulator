@@ -141,7 +141,7 @@ void PPU::emulateDot() {
 		this->setDot(this->getBGColor(0, 0));
 
 	// Skip one cycle if odd frame and is rendering
-	if(this->scanlineNum == -1 && this->cycleNum == 338 && this->isRenderingBG()) this->cycleNum += oddFrame;
+	if(this->scanlineNum == -1 && this->cycleNum == 338 && this->isRenderingBG()) this->cycleNum += this->oddFrame;
 	if(this->cycleNum == 340) {
 		this->scanlineNum = ((this->scanlineNum + 1 + 1) % (261 + 1)) - 1;
 		this->cycleNum = 0;
