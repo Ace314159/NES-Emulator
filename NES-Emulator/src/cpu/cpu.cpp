@@ -11,18 +11,20 @@ void CPU::emulateCycle() {
 	}
 	
 	if(this->gotData) {
-		if(mem.inNMI) {
+		if(this->mem.inNMI) {
 			this->interrupt(0xFFFA);
+		} else if(this->mem.inIRQ) {
+			this->interrupt(0xFFFE);
 		} else {
 			(this->*(this->operations[this->opcode]))();
 		}
 	}
 	if(!this->gotData) { // gotData may change after the operation
 		if(this->cycleNum == 0) {
-			if(mem.inNMI) {
+			if(this->mem.inNMI || this->mem.inIRQ) {
 				this->opcode = 0x00; // BRK opcode
 			} else {
-				this->opcode = mem.getRAM8(this->PC++);
+				this->opcode = this->mem.getRAM8(this->PC++);
 				/*printf("%04X  %02X    A:%02X X:%02X Y:%02X P:%02X SP:%02X CYC:%3d SL:%1d\n", PC - 1, opcode,
 					A, X, Y, P.byte.to_ulong(), S, CYC, SL);*/
 			}
@@ -55,6 +57,7 @@ void CPU::lastAddressingCycle(uint16_t newEffectiveAddr) {
 	this->effectiveAddr = newEffectiveAddr;
 	this->dataV = this->mem.getRAM8(this->effectiveAddr);
 	this->mem.ppuRegisterRead = 0;
+	this->mem.apuRegisterRead = 0;
 	this->gotData = true;
 	this->onAccumulator = false;
 }
@@ -139,7 +142,11 @@ void CPU::absoluteX(uint8_t cycleNum) {
 		this->effectiveAddr = (this->effectiveAddrLow | (this->effectiveAddrHigh << 8)) + this->X;
 		if(this->effectiveAddrHigh == (this->effectiveAddr >> 8)) { // Page boundary not crossed
 			this->lastAddressingCycle(this->effectiveAddr);
-		} else this->dataV = this->mem.getRAM8(this->effectiveAddr - 0x100);
+		} else {
+			this->dataV = this->mem.getRAM8(this->effectiveAddr - 0x100);
+			this->mem.ppuRegisterRead = 0;
+			this->mem.apuRegisterRead = 0;
+		}
 		break;
 	case 4:
 		this->lastAddressingCycle(this->effectiveAddr); // Page already incremened
@@ -159,7 +166,11 @@ void CPU::absoluteY(uint8_t cycleNum) {
 		this->effectiveAddr = (this->effectiveAddrLow | (this->effectiveAddrHigh << 8)) + this->Y;
 		if(this->effectiveAddrHigh == (this->effectiveAddr >> 8)) { // Page boundary not crossed
 			this->lastAddressingCycle(this->effectiveAddr);
-		} else this->dataV = this->mem.getRAM8(this->effectiveAddr - 0x100);
+		} else {
+			this->dataV = this->mem.getRAM8(this->effectiveAddr - 0x100);
+			this->mem.ppuRegisterRead = 0;
+			this->mem.apuRegisterRead = 0;
+		}
 		break;
 	case 4:
 		this->lastAddressingCycle(this->effectiveAddr); // Page already incremened
@@ -276,27 +287,32 @@ void CPU::lastOperationCycle() {
 	this->cycleNum = 0;
 	this->usedAbsoluteXIndirectY = false;
 	this->gotData = false;
-	mem.inNMI = false;
-	mem.inDMA = false;
-	if(mem.NMICalled) mem.inNMI = true;
-	mem.NMICalled = false;
+	this->mem.inNMI = false;
+	this->mem.inIRQ = false;
+	this->mem.inDMA = false;
+	if(this->mem.NMICalled) mem.inNMI = true;
+	else if(this->mem.IRQCalled && !this->P.I) {
+		this->mem.inIRQ = true;
+		this->mem.IRQCalled = false;
+	}
+	this->mem.NMICalled = false;
 }
 
 void CPU::interrupt(uint16_t vectorLocation) {
 	switch(cycleNum - this->addressingCyclesUsed) {
 	case 0:
 		this->mem.getRAM8(this->PC);
+		if(!this->mem.inNMI && !this->mem.inIRQ) this->PC++;
 		break;
 	case 1:
-		if(vectorLocation == 0xFFFE) this->PC++; // After BRK go to PC + 2
 		this->stackPush(this->PC >> 8);
 		break;
 	case 2:
 		this->stackPush(this->PC & 0xff);
 		break;
 	case 3:
-		// if(vectorLocation == 0xFFFE) this->P.B = 1;
-		this->stackPush((this->P.byte.to_ulong() & 0xff) | (1 << 4)); // Bit 4 is set
+		// Bit 4 is only set if interrupt caused by BRK
+		this->stackPush((this->P.byte.to_ulong() & 0xff) | ((!this->mem.inNMI && !this->mem.inIRQ) << 3)); 
 		break;
 	case 4:
 		this->P.I = 1;
@@ -308,6 +324,7 @@ void CPU::interrupt(uint16_t vectorLocation) {
 	case 6:
 		this->PC = this->effectiveAddrLow | (this->effectiveAddrHigh << 8);
 		this->lastOperationCycle();
+		this->mem.inIRQ = false;
 		break;
 	}
 }
@@ -449,6 +466,7 @@ void CPU::CLD() {
 
 void CPU::CLI() {
 	this->P.I = 0;
+	this->mem.inIRQ = false;
 	this->lastOperationCycle();
 }
 
@@ -797,6 +815,7 @@ void CPU::SED() {
 
 void CPU::SEI() {
 	this->P.I = 1;
+	if(this->mem.IRQCalled) this->mem.inIRQ = true;
 	this->lastOperationCycle();
 }
 

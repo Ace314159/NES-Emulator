@@ -1,26 +1,46 @@
 #include "stdafx.h"
 #include "apu.h"
+#include "cpu/cpu.h"
 
 
 APU::APU(Memory& m) : mem(m) { this->fillLookupTables(); }
 
 void APU::emulateCycle() {
+	assert(!this->registerRead || !this->registerWritten);
 	if(this->registerRead) this->handleRegisterReads();
-	else if(this->registerWritten) this->handleRegisterWrites();
-
-	this->emulateFrameCounter();
+	this->emulateFrameCounter(); // Clock represents half cycle
+	if(this->registerWritten) this->handleRegisterWrites();
 
 	this->triangle.emulateCycle();
+	this->triangle.dontChangeLengthCounter = false;
+	this->pulse1.dontChangeLengthCounter = false;
+	this->pulse2.dontChangeLengthCounter = false;
+	this->noise.dontChangeLengthCounter = false;
 	if(this->mem.mapper->CPUcycleCount % 2 == 0) {
 		this->pulse1.emulateCycle();
 		this->pulse2.emulateCycle();
 		this->noise.emulateCycle();
+
+		if(this->resetFrameCounter) {
+			this->frameCounterCycle = -1;
+			this->resetFrameCounter = false;
+			this->frameCounter = this->newFrameCounter;
+			if((this->frameCounter >> 6) & 0x1) this->mem.IRQCalled = false;
+			if(this->frameCounter >> 7) {
+				this->quarterFrame();
+				this->halfFrame();
+			}
+		}
 	}
-	this->triangle.emulateCycle();
 	this->queueAudio();
 }
 
 void APU::handleRegisterReads() {
+	switch(this->registerRead) {
+	case 0x4015:
+		this->mem.IRQCalled = false;
+		break;
+	}
 	this->registerRead = 0;
 }
 
@@ -60,6 +80,9 @@ void APU::handleRegisterWrites() {
 		this->triangle.enabled = (this->status >> 2) & 0x1;
 		this->noise.enabled = (this->status >> 3) & 0x1;
 		break;
+	case 0x4017:
+		this->resetFrameCounter = true;
+		break;
 	}
 	this->registerWritten = 0;
 }
@@ -82,7 +105,7 @@ void APU::emulateFrameCounter() {
 			this->halfFrame();
 			break;
 		case 37282:
-			this->frameCounterCycle = 0;
+			this->frameCounterCycle = 1; // Should have been incremented in switch
 			break;
 		}
 	} else {
@@ -105,7 +128,7 @@ void APU::emulateFrameCounter() {
 			break;
 		case 29830:
 			this->changeIRQ();
-			this->frameCounterCycle = 0;
+			this->frameCounterCycle = 1; // Should have been incremented in the switch
 			break;
 		}
 	}
@@ -127,7 +150,7 @@ void APU::halfFrame() {
 }
 
 void APU::changeIRQ() {
-	this->mem.inIRQ = ~((this->frameCounter >> 6) & 0x1);
+	this->mem.IRQCalled = !((this->frameCounter >> 6) & 0x1);
 }
 
 

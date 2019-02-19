@@ -8,10 +8,19 @@ const std::array<uint8_t, 0x20> Channel::lengthCounterTable{{10, 254, 20, 2, 40,
 
 
 // Common Functions
+void Channel::emulateCycle() {
+	this->lengthCounterHaltVal = this->lengthCounterHalt();
+	if(!this->enabled) {
+		this->lengthCounter = 0;
+		return;
+	}
+}
+
 void Channel::loadLengthCounter() {
-	if(this->enabled) this->lengthCounter = this->lengthCounterTable[this->lengthCounterReload()];
+	if(this->enabled && !this->dontChangeLengthCounter) this->lengthCounter = this->lengthCounterTable[this->lengthCounterReload()];
 }
 
 void Channel::halfFrame() {
-	if(this->lengthCounter != 0 && !this->lengthCounterHalt()) this->lengthCounter--;
+	if(this->lengthCounter != 0) this->dontChangeLengthCounter = true;
+	if(this->lengthCounter != 0 && !this->lengthCounterHaltVal) this->lengthCounter--;
 }

@@ -13,10 +13,7 @@ modePeriod(registerStart[2]), LCL(registerStart[3]) {
 
 // Channel Functions
 void Noise::emulateCycle() {
-	if(!this->enabled) {
-		this->lengthCounter = 0;
-		return;
-	}
+	Channel::emulateCycle();
 
 	if(this->timerCounter == 0) {
 		// Feedback Bit = Bit 1 ^ (Bit 6 if modeFlag is set else Bit 1)

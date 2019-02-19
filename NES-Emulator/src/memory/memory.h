@@ -48,6 +48,7 @@ public:
 	uint8_t DMAVal;
 	bool DMAdoneDummy = false;
 	// IRQ
+	bool IRQCalled = false;
 	bool inIRQ = false;
 
 	// PPU

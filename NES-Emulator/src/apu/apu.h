@@ -19,9 +19,12 @@ public:
 	uint8_t& frameCounter = mem.apuRegisters[0x17];
 
 	// Useful Variables
-	unsigned int frameCounterCycle = 0;
 	uint16_t& registerRead = mem.apuRegisterRead;
 	uint16_t& registerWritten = mem.apuRegisterWritten;
+	// Frame Counter
+	bool resetFrameCounter = false;
+	uint8_t newFrameCounter = 0;
+	unsigned int frameCounterCycle = 5;
 
 	// Channels
 	Pulse pulse1{mem.apuRegisters.data() + 0x0, false};

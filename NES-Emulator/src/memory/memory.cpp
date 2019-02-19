@@ -63,7 +63,14 @@ uint8_t Memory::getRAM8(uint16_t addr) {
 			if(this->buttons1Index < 8) return this->buttons1[this->buttons1Index++];
 			else return 0x1;
 		}
-		this->apuRegisterRead = addr;
+		switch(addr) {
+		case 0x4015:
+			this->apuRegisterRead = 0x4015;
+			return (this->IRQCalled << 6) | ((this->apu.noise.lengthCounter > 0) << 3) |
+				((this->apu.triangle.lengthCounter > 0) << 2) | ((this->apu.pulse2.lengthCounter > 0) << 1) |
+				((this->apu.pulse1.lengthCounter > 0) << 0);
+			break;
+		}
 		return addrValue;
 		break;
 	case RAMAddrType::WRAM:
@@ -99,7 +106,17 @@ void Memory::setRAM8(uint16_t addr, uint8_t data) {
 		break;
 	case RAMAddrType::APU_REGISTER:
 		if(addr != 0x4016) this->apuRegisterWritten = addr;
-		addrValue = data;
+		switch(addr) {
+		case 0x4015:
+			addrValue = (addrValue & ~0x1F) | (data & 0x1F);
+			break;
+		case 0x4017:
+			this->apu.newFrameCounter = data;
+			break;
+		default:
+			addrValue = data;
+			break;
+		}
 		break;
 	case RAMAddrType::WRAM:
 		addrValue = data;

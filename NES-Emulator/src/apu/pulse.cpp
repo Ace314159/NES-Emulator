@@ -12,10 +12,7 @@ DLCV(registerStart[0]), sweep(registerStart[1]), timerLow(registerStart[2]), LCL
 
 // Channel Functions
 void Pulse::emulateCycle() {
-	if(!this->enabled) {
-		this->lengthCounter = 0;
-		return;
-	}
+	Channel::emulateCycle();
 
 	if(this->timerDividerCounter == 0) {
 		++this->dutyCyclePositon %= 8;

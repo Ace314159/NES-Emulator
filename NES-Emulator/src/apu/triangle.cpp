@@ -13,10 +13,7 @@ linearCounterReg(registerStart[0]), timerLow(registerStart[1]), LCLTH(registerSt
 
 // Channel Functions
 void Triangle::emulateCycle() {
-	if(!this->enabled) {
-		this->lengthCounter = 0;
-		return;
-	}
+	Channel::emulateCycle();
 
 	if(this->timerDividerCounter == 0) {
 		++this->sequencePosition %= this->sequence.size();

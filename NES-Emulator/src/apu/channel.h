@@ -27,6 +27,8 @@ public:
 	virtual uint8_t generateSample() = 0;
 
 	// Useful Variables
+	bool lengthCounterHaltVal = false;
+	bool dontChangeLengthCounter = false;
 	bool enabled = false;
 	uint8_t lengthCounter = 0;
 	static const std::array<uint8_t, 0x20> lengthCounterTable;
