@@ -85,9 +85,10 @@ void Memory::setRAM8(uint16_t addr, uint8_t data) {
 		addrValue = data;
 		break;
 	case RAMAddrType::PPU_REGISTER:
-		addrValue = this->cpuPpuBus = data;
+		this->cpuPpuBus = data;
 		if(addr == 0x2002 || (addr == 0x2004 && this->scanlineNum < 240 && (this->ppuRegisters[1] >> 3) & 0x3))
 			return;
+		addrValue = this->cpuPpuBus;
 		this->ppuRegisterWritten = addr;
 		// Set low 5 bits of PPUSTATUS - TODO: Find better way
 		this->ppuRegisters[0x2] = (this->ppuRegisters[0x2] & ~0x1F) | (this->cpuPpuBus & 0x1F);
