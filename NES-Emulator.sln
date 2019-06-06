@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26730.3
+VisualStudioVersion = 15.0.28307.421
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NES-Emulator", "NES-Emulator\NES-Emulator.vcxproj", "{3AE412A0-AEA8-42DF-B1C6-187DF7EC3AAD}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Core", "Core\Core.vcxproj", "{BDFB1739-E99D-43BC-B1C6-744C9070AB74}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Application", "Application\Application.vcxproj", "{4CA218DC-CDD8-4891-A816-5B93D02B5F18}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -13,19 +15,27 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{3AE412A0-AEA8-42DF-B1C6-187DF7EC3AAD}.Debug|x64.ActiveCfg = Debug|x64
-		{3AE412A0-AEA8-42DF-B1C6-187DF7EC3AAD}.Debug|x64.Build.0 = Debug|x64
-		{3AE412A0-AEA8-42DF-B1C6-187DF7EC3AAD}.Debug|x86.ActiveCfg = Debug|Win32
-		{3AE412A0-AEA8-42DF-B1C6-187DF7EC3AAD}.Debug|x86.Build.0 = Debug|Win32
-		{3AE412A0-AEA8-42DF-B1C6-187DF7EC3AAD}.Release|x64.ActiveCfg = Release|x64
-		{3AE412A0-AEA8-42DF-B1C6-187DF7EC3AAD}.Release|x64.Build.0 = Release|x64
-		{3AE412A0-AEA8-42DF-B1C6-187DF7EC3AAD}.Release|x86.ActiveCfg = Release|Win32
-		{3AE412A0-AEA8-42DF-B1C6-187DF7EC3AAD}.Release|x86.Build.0 = Release|Win32
+		{BDFB1739-E99D-43BC-B1C6-744C9070AB74}.Debug|x64.ActiveCfg = Debug|x64
+		{BDFB1739-E99D-43BC-B1C6-744C9070AB74}.Debug|x64.Build.0 = Debug|x64
+		{BDFB1739-E99D-43BC-B1C6-744C9070AB74}.Debug|x86.ActiveCfg = Debug|Win32
+		{BDFB1739-E99D-43BC-B1C6-744C9070AB74}.Debug|x86.Build.0 = Debug|Win32
+		{BDFB1739-E99D-43BC-B1C6-744C9070AB74}.Release|x64.ActiveCfg = Release|x64
+		{BDFB1739-E99D-43BC-B1C6-744C9070AB74}.Release|x64.Build.0 = Release|x64
+		{BDFB1739-E99D-43BC-B1C6-744C9070AB74}.Release|x86.ActiveCfg = Release|Win32
+		{BDFB1739-E99D-43BC-B1C6-744C9070AB74}.Release|x86.Build.0 = Release|Win32
+		{4CA218DC-CDD8-4891-A816-5B93D02B5F18}.Debug|x64.ActiveCfg = Debug|x64
+		{4CA218DC-CDD8-4891-A816-5B93D02B5F18}.Debug|x64.Build.0 = Debug|x64
+		{4CA218DC-CDD8-4891-A816-5B93D02B5F18}.Debug|x86.ActiveCfg = Debug|Win32
+		{4CA218DC-CDD8-4891-A816-5B93D02B5F18}.Debug|x86.Build.0 = Debug|Win32
+		{4CA218DC-CDD8-4891-A816-5B93D02B5F18}.Release|x64.ActiveCfg = Release|x64
+		{4CA218DC-CDD8-4891-A816-5B93D02B5F18}.Release|x64.Build.0 = Release|x64
+		{4CA218DC-CDD8-4891-A816-5B93D02B5F18}.Release|x86.ActiveCfg = Release|Win32
+		{4CA218DC-CDD8-4891-A816-5B93D02B5F18}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {76C97836-3BCA-485F-A6FD-98D8D7DF6520}
+		SolutionGuid = {970CCAE8-6728-4292-A718-104E19F563DD}
 	EndGlobalSection
 EndGlobal

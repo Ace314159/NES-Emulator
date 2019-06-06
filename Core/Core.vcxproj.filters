@@ -1,0 +1,159 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\PPU">
+      <UniqueIdentifier>{ccd322df-b67d-48e4-a205-d2f35e95093f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Memory">
+      <UniqueIdentifier>{45664eb2-12a0-43f3-b7c2-36ef3cc3f461}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Source Files\PPU">
+      <UniqueIdentifier>{cd8a6510-0c22-4d90-b2fc-48c7b6375cb7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Memory\Mappers">
+      <UniqueIdentifier>{ebfca6a0-dee6-45cf-a54f-de224916ee47}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Memory">
+      <UniqueIdentifier>{7641892e-8e69-494c-9219-50cc85e2c7fc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Memory\Mappers">
+      <UniqueIdentifier>{502d9b09-c705-4ec3-8f37-de166946ccac}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Headers">
+      <UniqueIdentifier>{0c5f1205-e894-4a5d-ac8a-0eb7992ca248}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Headers">
+      <UniqueIdentifier>{e47eca8f-e2dd-4feb-8b64-96db2301fc93}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\CPU">
+      <UniqueIdentifier>{1a6e5759-3698-4e23-b848-c661c96fa529}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\CPU">
+      <UniqueIdentifier>{91804567-5656-4b3a-ab42-ff9a0c1af65c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\APU">
+      <UniqueIdentifier>{165c3c98-d444-4c18-91be-c97cb0615419}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\APU">
+      <UniqueIdentifier>{8e9d916d-6fe4-4735-9305-8775cd81193d}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="PPU.cpp">
+      <Filter>Source Files\PPU</Filter>
+    </ClCompile>
+    <ClCompile Include="Window.cpp">
+      <Filter>Source Files\PPU</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseMapper.cpp">
+      <Filter>Source Files\Memory\Mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="MMC1.cpp">
+      <Filter>Source Files\Memory\Mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="NROM.cpp">
+      <Filter>Source Files\Memory\Mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="Memory.cpp">
+      <Filter>Source Files\Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="iNESHeader.cpp">
+      <Filter>Source Files\Headers</Filter>
+    </ClCompile>
+    <ClCompile Include="CPU.cpp">
+      <Filter>Source Files\CPU</Filter>
+    </ClCompile>
+    <ClCompile Include="Opcodes.cpp">
+      <Filter>Source Files\CPU</Filter>
+    </ClCompile>
+    <ClCompile Include="APU.cpp">
+      <Filter>Source Files\APU</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio.cpp">
+      <Filter>Source Files\APU</Filter>
+    </ClCompile>
+    <ClCompile Include="Channel.cpp">
+      <Filter>Source Files\APU</Filter>
+    </ClCompile>
+    <ClCompile Include="Noise.cpp">
+      <Filter>Source Files\APU</Filter>
+    </ClCompile>
+    <ClCompile Include="Pulse.cpp">
+      <Filter>Source Files\APU</Filter>
+    </ClCompile>
+    <ClCompile Include="Triangle.cpp">
+      <Filter>Source Files\APU</Filter>
+    </ClCompile>
+    <ClCompile Include="NES.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="glad.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="PPU.h">
+      <Filter>Header Files\PPU</Filter>
+    </ClInclude>
+    <ClInclude Include="Window.h">
+      <Filter>Header Files\PPU</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseMapper.h">
+      <Filter>Header Files\Memory\Mappers</Filter>
+    </ClInclude>
+    <ClInclude Include="MMC1.h">
+      <Filter>Header Files\Memory\Mappers</Filter>
+    </ClInclude>
+    <ClInclude Include="NROM.h">
+      <Filter>Header Files\Memory\Mappers</Filter>
+    </ClInclude>
+    <ClInclude Include="Memory.h">
+      <Filter>Header Files\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="iNESHeader.h">
+      <Filter>Header Files\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="CPU.h">
+      <Filter>Header Files\CPU</Filter>
+    </ClInclude>
+    <ClInclude Include="APU.h">
+      <Filter>Header Files\APU</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio.h">
+      <Filter>Header Files\APU</Filter>
+    </ClInclude>
+    <ClInclude Include="Channel.h">
+      <Filter>Header Files\APU</Filter>
+    </ClInclude>
+    <ClInclude Include="Noise.h">
+      <Filter>Header Files\APU</Filter>
+    </ClInclude>
+    <ClInclude Include="Pulse.h">
+      <Filter>Header Files\APU</Filter>
+    </ClInclude>
+    <ClInclude Include="Triangle.h">
+      <Filter>Header Files\APU</Filter>
+    </ClInclude>
+    <ClInclude Include="NES.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
