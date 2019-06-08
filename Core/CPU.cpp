@@ -57,7 +57,7 @@ void CPU::OAMDMA() {
 void CPU::lastAddressingCycle(uint16_t newEffectiveAddr) {
 	this->addressingCyclesUsed = this->cycleNum + 1; // Equals cycleNum after increment in lastCycle()
 	this->effectiveAddr = newEffectiveAddr;
-	this->dataV = this->mem.getRAM8(this->effectiveAddr);
+	if(this->effectiveAddr != 0x4016) this->dataV = this->mem.getRAM8(this->effectiveAddr);
 	this->mem.ppuRegisterRead = 0;
 	this->mem.apuRegisterRead = 0;
 	this->gotData = true;
