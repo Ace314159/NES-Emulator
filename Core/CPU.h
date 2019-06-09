@@ -13,11 +13,11 @@ public:
 		std::bitset<8>::reference N() { return byte[7]; } // Negative
 		std::bitset<8>::reference V() { return byte[6]; } // Overflow
                                                           // Expansion Bit - Bit 5 is unused, always 1
-		std::bitset<8>::reference B() { return byte[5]; } // Break - Doesn't physically exist
-		std::bitset<8>::reference D() { return byte[4]; } // Decimal - Removed in the NES
-		std::bitset<8>::reference I() { return byte[3]; } // Interrupt Disable
-		std::bitset<8>::reference Z() { return byte[2]; } // Zero
-		std::bitset<8>::reference C() { return byte[1]; } // Carry
+		std::bitset<8>::reference B() { return byte[4]; } // Break - Doesn't physically exist
+		std::bitset<8>::reference D() { return byte[3]; } // Decimal - Removed in the NES
+		std::bitset<8>::reference I() { return byte[2]; } // Interrupt Disable
+		std::bitset<8>::reference Z() { return byte[1]; } // Zero
+		std::bitset<8>::reference C() { return byte[0]; } // Carry
 	};
 
 
