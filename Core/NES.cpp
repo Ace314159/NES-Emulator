@@ -2,7 +2,7 @@
 #include "NES.h"
 #include "Memory.h"
 
-NES::NES(std::string romFileName) { loadRom(romFileName); }
+NES::NES(const std::string& romFileName) { loadRom(romFileName); }
 
 NES::~NES() { glfwTerminate(); }
 
@@ -20,7 +20,7 @@ void NES::tick() {
 	this->handleInput();
 }
 
-void NES::loadRom(std::string& romFileName) {
+void NES::loadRom(const std::string& romFileName) {
 	std::basic_ifstream<uint8_t> romData(romFileName, std::ios::binary);
 	if(!romData.good()) {
 		throw std::runtime_error("Could not read ROM file");

@@ -7,11 +7,11 @@
 
 class NES {
 public:
-	NES(std::string romFileName);
+	NES(const std::string& romFileName);
 	~NES();
 
 	// Important Functions
-	void loadRom(std::string& romFileName);
+	void loadRom(const std::string& romFileName);
 	void handleInput();
 	void tick();
 	bool isRunning();
