@@ -314,7 +314,7 @@ void CPU::interrupt(uint16_t vectorLocation) {
 		break;
 	case 3:
 		// Bit 4 is only set if interrupt caused by BRK
-		this->stackPush((this->P.byte.to_ulong() & 0xff) | ((!this->mem.inNMI && !this->mem.inIRQ) << 3)); 
+		this->stackPush((this->P.byte.to_ulong() & 0xff) | ((!this->mem.inNMI && !this->mem.inIRQ) << 4)); 
 		break;
 	case 4:
 		this->P.I() = 1;
