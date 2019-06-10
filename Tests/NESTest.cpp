@@ -2,8 +2,9 @@
 #include "nesTest.h"
 
 
-NESTest::NESTest(const std::string& testFileName) : NES(testFileName) {
-	this->framesFolder = testFileName.substr(0, testFileName.find_last_of("."));
+NESTest::NESTest(const fs::path& testFilePath) : NES(testFilePath) {
+	this->framesFolder = testFilePath.parent_path() / testFilePath.stem();
+	std::filesystem::remove_all(this->framesFolder);
 	std::filesystem::create_directory(this->framesFolder);
 	std::fill(this->prevScreenTexPixels.begin(), this->prevScreenTexPixels.end(), Color{0, 0, 0});
 

@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <iostream>
 #include <fstream>
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <thread>
@@ -15,6 +16,9 @@
 
 using std::cout;
 using std::endl;
+using namespace std::string_literals;
+
+namespace fs = std::filesystem;
 
 constexpr double NTSC_FREQ(39375000.0 / 11 * 6 / 12); // NTSC CPU Clock Frequency
 constexpr double PAL_FREQ(39375000.0 / 11 * 6 / 12); // PAL CPU Clock Frequency

@@ -6,14 +6,10 @@ class Test {
 protected:
 	NESTest nes;
 public:
-	explicit Test(const std::filesystem::path testFileName) : nes(testFileName.string()) {};
+	explicit Test(const fs::path& testType, const fs::path& testCategory,
+		const fs::path& testName);
 
-	inline void makeTest() {
-		while(glfwGetKey(this->nes.ppu.window.window, GLFW_KEY_ESCAPE) != GLFW_PRESS) {
-			this->nes.tick();
-			this->nes.dumpScreen();
-		}
-	}
+	void makeTest();
 	virtual bool passed() = 0;
 };
 

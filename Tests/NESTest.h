@@ -5,7 +5,7 @@
 
 class NESTest : public NES {
 public:
-	NESTest(const std::string& testFileName);
+	NESTest(const fs::path& testFilePath);
 	void tick();
 
 	unsigned long long cycleNum = 0;
