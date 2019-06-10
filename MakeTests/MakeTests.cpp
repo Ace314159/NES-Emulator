@@ -5,7 +5,7 @@
 int main(int argc, char* argv[]) {
 	try {
 		std::make_unique<ScreenTest>
-			("CPU_Tests"s, "cpu_dummy_writes"s, "cpu_dummy_writes_oam"s)->makeTest();
+			("CPU_Tests"s, "instr_test-v5"s, "16-special"s)->makeTest();
 	} catch(const TestFailException& e) {
 		fs::remove_all(e.framesFolder);
 		fs::create_directory(e.framesFolder);

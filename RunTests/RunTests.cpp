@@ -52,8 +52,23 @@ TEST(CPUTests, instrMisc) {
 }
 
 TEST(CPUTests, instrTest) {
-	RUN_TEST(ScreenTest, "CPU_Tests"s, "instr_test-v5"s, "all_instrs"s);
-	RUN_TEST(ScreenTest, "CPU_Tests"s, "instr_test-v5"s, "official_only"s);
+	RUN_TEST(ScreenTest, "CPU_Tests"s, "instr_test-v5"s, "01-basics"s);
+	RUN_TEST(ScreenTest, "CPU_Tests"s, "instr_test-v5"s, "02-implied"s);
+	RUN_TEST(ScreenTest, "CPU_Tests"s, "instr_test-v5"s, "03-immediate"s);
+	RUN_TEST(ScreenTest, "CPU_Tests"s, "instr_test-v5"s, "04-zero_page"s);
+	RUN_TEST(ScreenTest, "CPU_Tests"s, "instr_test-v5"s, "05-zp_xy"s);
+	RUN_TEST(ScreenTest, "CPU_Tests"s, "instr_test-v5"s, "06-absolute"s);
+	RUN_TEST(ScreenTest, "CPU_Tests"s, "instr_test-v5"s, "07-abs_xy"s);
+	RUN_TEST(ScreenTest, "CPU_Tests"s, "instr_test-v5"s, "08-ind_x"s);
+	RUN_TEST(ScreenTest, "CPU_Tests"s, "instr_test-v5"s, "09-ind_y"s);
+	RUN_TEST(ScreenTest, "CPU_Tests"s, "instr_test-v5"s, "10-branches"s);
+	RUN_TEST(ScreenTest, "CPU_Tests"s, "instr_test-v5"s, "11-stack"s);
+	RUN_TEST(ScreenTest, "CPU_Tests"s, "instr_test-v5"s, "12-jmp_jsr"s);
+	RUN_TEST(ScreenTest, "CPU_Tests"s, "instr_test-v5"s, "13-rts"s);
+	RUN_TEST(ScreenTest, "CPU_Tests"s, "instr_test-v5"s, "14-rti"s);
+	RUN_TEST(ScreenTest, "CPU_Tests"s, "instr_test-v5"s, "15-brk"s);
+	RUN_TEST(ScreenTest, "CPU_Tests"s, "instr_test-v5"s, "16-special"s);
+
 }
 
 TEST(CPUTests, instrTiming) {
