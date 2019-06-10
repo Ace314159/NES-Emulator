@@ -2,14 +2,21 @@
 
 #include "NESTest.h"
 
-class Test {
-protected:
-	NESTest nes;
+class TestFailException : public std::runtime_error {
 public:
+	TestFailException(const fs::path& framesDir, const std::string& error);
+
+	fs::path framesFolder;
+	std::string error;
+};
+
+class Test {
+public:
+	NESTest nes;
 	explicit Test(const fs::path& testType, const fs::path& testCategory,
 		const fs::path& testName);
 
 	void makeTest();
-	virtual bool passed() = 0;
+	virtual void passed();
 };
 

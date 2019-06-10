@@ -1,11 +1,16 @@
 #include "stdafx.h"
 #include "ScreenTest.h"
 
-bool ScreenTest::passed() {
-	std::vector<std::filesystem::path> filePaths;
-	for(const auto& entry : std::filesystem::directory_iterator(this->nes.framesFolder)) {
+void ScreenTest::passed() {
+	Test::passed();
+
+	std::vector<fs::path> filePaths;
+	for(const auto& entry : fs::directory_iterator(this->nes.framesFolder)) {
 		filePaths.push_back(entry.path());
 	}
+	std::sort(filePaths.begin(), filePaths.end(), [](const auto& a, const auto& b) {
+		return std::stoull(a.stem().string()) < std::stoull(b.stem().string());
+	});
 	std::array<Color, Window::width * Window::height> screenTexPixels;
 	for(auto filePath : filePaths) {
 		unsigned long long cycleNum = std::stoull(filePath.stem().string());
@@ -18,8 +23,7 @@ bool ScreenTest::passed() {
 		file.seekg(this->nes.screenDumpHeader.size());
 		file.read(reinterpret_cast<GLubyte*>(screenTexPixels.data()), screenTexPixels.size() * 3);
 		if(this->nes.ppu.window.screenTexPixels != screenTexPixels) {
-			return false;
+			throw std::runtime_error("Test Failed!");
 		}
 	}
-	return true;
 }

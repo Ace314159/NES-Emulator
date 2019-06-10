@@ -5,6 +5,6 @@
 class ScreenTest : public Test {
 public:
 	using Test::Test;
-	bool passed() override;
+	void passed() override;
 };
 
