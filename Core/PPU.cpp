@@ -17,7 +17,9 @@ void PPU::emulateAferCPU() {
 		this->oldNMI = false;
 	}
 	if(mem.inDMA && mem.DMAdoneDummy && (this->mem.mapper->CPUcycleCount % 2)) {
-		this->mem.OAM[(this->OAMDMAStartAddr + ((mem.DMAAddr - 1) & 0xff)) % 256] = this->mem.DMAVal;
+		uint8_t oamAddr = (this->OAMDMAStartAddr + ((mem.DMAAddr - 1) & 0xff)) % 256;
+		if(oamAddr % 4 == 2) this->mem.DMAVal &= 0xE3;
+		this->mem.OAM[oamAddr] = this->mem.DMAVal;
 	}
 }
 
@@ -46,6 +48,7 @@ void PPU::handleRegisterWrites() {
 		this->tempVramAddr = (this->tempVramAddr & ~0xC00) | (this->CTRL & 0x3) << 10;
 		break;
 	case 0x2004: // OAM DATA
+		if(this->OAMADDR % 4 == 2) this->OAMDATA &= 0xE3;
 		this->mem.OAM[this->OAMADDR++] = this->OAMDATA;
 		this->OAMADDR %= 0x100;
 		break;

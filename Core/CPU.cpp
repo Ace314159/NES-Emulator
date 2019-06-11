@@ -2,6 +2,7 @@
 #include "CPU.h"
 
 #include <cstdio>
+#include "PPU.h"
 
 CPU::CPU(Memory& m) : mem(m) {}
 
@@ -27,8 +28,11 @@ void CPU::emulateCycle() {
 				this->opcode = 0x00; // BRK opcode
 			} else {
 				this->opcode = this->mem.getRAM8(this->PC++);
+				/*printf("%04X  A:%02X X:%02X Y:%02X P:%02X SP:%02X CYC:%-3d SL:%-3d  %u\n", PC - 1,
+					A, X, Y, P.byte.to_ulong() & ~0x30, S, this->mem.ppu.cycleNum, this->mem.ppu.scanlineNum,
+					this->mem.mapper->CPUcycleCount);*/
 				/*printf("%04X  %02X    A:%02X X:%02X Y:%02X P:%02X SP:%02X CYC:%3d SL:%1d\n", PC - 1, opcode,
-					A, X, Y, P.byte.to_ulong(), S, 0, 0);*/
+					A, X, Y, P.byte.to_ulong(), S, this->mem.ppu.cycleNum, this->mem.ppu.scanlineNum);*/
 			}
 		} else {
 			(this->*(this->addressingModes[this->opcode]))(this->cycleNum);
