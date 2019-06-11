@@ -10,8 +10,8 @@ void NES::tick() {
 	this->cpu.emulateCycle();
 	this->mem.mapper->CPUcycleCount++;
 
-	this->ppu.emulateAferCPU();
 	this->ppu.emulateDot();
+	this->ppu.emulateAferCPU();
 	this->ppu.emulateDot();
 	this->ppu.emulateDot();
 
