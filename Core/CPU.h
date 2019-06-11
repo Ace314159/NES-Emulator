@@ -42,7 +42,6 @@ public:
 	uint8_t dataV; // data that is not a reference (value), if data changes between cycles
 	uint8_t opcode;
 	bool gotData = false;
-	bool branchResult;
 	bool doingIllegalOpcode = false;
 	uint8_t addressingCyclesUsed;
 	uint8_t cycleNum = 0;
@@ -88,6 +87,7 @@ public:
 	void lastOperationCycle(); // Run on the last cycle
 	void interrupt(uint16_t vectorLocation);
 	void RMW(uint8_t result); // Read, Modify, Write Operations
+	void branchOp(bool branchResult); // Branch Operations
 	void ADC();
 	void AHX(); // Undocumented
 	void ALR(); // Undocumented

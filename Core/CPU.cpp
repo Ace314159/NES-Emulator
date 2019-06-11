@@ -99,33 +99,9 @@ void CPU::zeroPage(uint8_t cycleNum) {
 }
 
 void CPU::relative(uint8_t cycleNum) {
-	uint16_t currentPage;
-	switch(cycleNum) {
-	case 1:
-		this->effectiveAddr = this->PC++;
-		(this->*(this->operations[this->opcode]))();
-		if(!this->branchResult) {
-			this->cycleNum++; // Increment as this cycle has finished
-			this->lastOperationCycle();
-			this->cycleNum--; // Decrement it now as it will get incremented in emulateCycle
-		}
-		break;
-	case 2:
-		currentPage = this->PC >> 8;
-		this->PC += static_cast<int8_t>(mem.getRAM8(this->effectiveAddr));
-		if(currentPage == (this->PC >> 8)) { // Page Boundary not crossed
-			this->cycleNum++; // Increment as this cycle has finished
-			this->lastOperationCycle();
-			this->cycleNum--; // Decrement it now as it will get incremented in emulateCycle
-		}
-		break;
-	case 3:
-		// Increment page boundary, but do nothing as it has already been incremented
-		this->cycleNum++; // Increment as this cycle has finished
-		this->lastOperationCycle();
-		this->cycleNum--; // Decrement it now as it will get incremented in emulateCycle
-		break;
-	}
+	assert(cycleNum == 1);
+	this->dataV = this->mem.getRAM8(this->PC);
+	this->lastAddressingCycle(this->PC++);
 }
 
 void CPU::absoluteX(uint8_t cycleNum) {
@@ -392,6 +368,26 @@ void CPU::RMW(uint8_t result) {
 	}
 }
 
+void CPU::branchOp(bool branchResult) {
+	uint16_t currentPage;
+	switch(cycleNum - this->addressingCyclesUsed) {
+	case 0:
+		if(!branchResult) this->lastOperationCycle();
+		break;
+	case 1:
+		currentPage = this->PC >> 8;
+		this->PC += static_cast<int8_t>(this->dataV);
+		// Page Boundary not crossed
+		if(currentPage == (this->PC >> 8)) this->lastOperationCycle();
+		else this->mem.getRAM8(((this->PC & ~(0xFF << 8)) | (currentPage << 8)));
+		break;
+	case 2:
+		// Increment page boundary, but do nothing as it has already been incremented
+		this->lastOperationCycle();
+		break;
+	}
+}
+
 void CPU::ADC() { // Change SBC if changing ADC
 	uint16_t result = this->A + mem.getRAM8(this->effectiveAddr) + this->P.C();
 	this->flagN(result & 0xff);
@@ -456,35 +452,36 @@ void CPU::AXS() { // Undocumented
 }
 
 void CPU::BCC() {
-	this->branchResult = !this->P.C();
+	this->branchOp(!this->P.C());
 }
 
 void CPU::BCS() {
-	this->branchResult = this->P.C();
+	this->branchOp(this->P.C());
 }
 
 void CPU::BEQ() {
-	this->branchResult = this->P.Z();
+	this->branchOp(this->P.Z());
 }
 
 void CPU::BIT() {
-	uint8_t result = this->A & mem.getRAM8(this->effectiveAddr);
+	uint8_t operand = mem.getRAM8(this->effectiveAddr);
+	uint8_t result = this->A & operand;
 	this->flagZ(result);
-	this->P.N() = mem.getRAM8(this->effectiveAddr) >> 7;
-	this->P.V() = (mem.getRAM8(this->effectiveAddr) >> 6) & 0x1;
+	this->P.N() = operand >> 7;
+	this->P.V() = (operand >> 6) & 0x1;
 	this->lastOperationCycle();
 }
 
 void CPU::BMI() {
-	this->branchResult = this->P.N();
+	this->branchOp(this->P.N());
 }
 
 void CPU::BNE() {
-	this->branchResult = !this->P.Z();
+	this->branchOp(!this->P.Z());
 }
 
 void CPU::BPL() {
-	this->branchResult = !this->P.N();
+	this->branchOp(!this->P.N());
 }
 
 void CPU::BRK() {
@@ -492,11 +489,11 @@ void CPU::BRK() {
 }
 
 void CPU::BVC() {
-	this->branchResult = !this->P.V();
+	this->branchOp(!this->P.V());
 }
 
 void CPU::BVS() {
-	this->branchResult = this->P.V();
+	this->branchOp(this->P.V());
 }
 
 void CPU::CLC() {
@@ -894,10 +891,6 @@ void CPU::SRE() { // Undocumented
 }
 
 void CPU::STA() {
-	if(((this->opcode == 0x9D || this->opcode == 0x99) && this->cycleNum == 4) || // Absolute Indexed
-		(this->opcode == 0x91 && this->cycleNum == 5)) { // Indirect, Y
-		return; // Need to use up one more cycle - Special Cases
-	}
 	mem.setRAM8(this->effectiveAddr, this->A);
 	this->lastOperationCycle();
 }
