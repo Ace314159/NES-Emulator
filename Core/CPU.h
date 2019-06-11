@@ -20,6 +20,9 @@ public:
 		std::bitset<8>::reference C() { return byte[0]; } // Carry
 	};
 
+	enum class OpcodeType { RMW, OTHER };
+	static OpcodeType opcodeTypes[256];
+
 
 	CPU(Memory& m);
 	Memory& mem;
@@ -38,10 +41,8 @@ public:
 	uint16_t effectiveAddr; // Acts as the Effective, Base, and Indirect Address
 	uint8_t dataV; // data that is not a reference (value), if data changes between cycles
 	uint8_t opcode;
-	bool onAccumulator = false;
 	bool gotData = false;
 	bool branchResult;
-	bool usedAbsoluteXIndirectY = false;
 	bool doingIllegalOpcode = false;
 	uint8_t addressingCyclesUsed;
 	uint8_t cycleNum = 0;
@@ -64,11 +65,14 @@ public:
 	void zeroPage(uint8_t cycleNum);
 	void relative(uint8_t cycleNum);
 	void absoluteX(uint8_t cycleNum);
+	void absoluteXR(uint8_t cycleNum);
 	void absoluteY(uint8_t cycleNum);
+	void absoluteYR(uint8_t cycleNum);
 	void zeroPageX(uint8_t cycleNum);
 	void zeroPageY(uint8_t cycleNum);
 	void indirectX(uint8_t cycleNum);
 	void indirectY(uint8_t cycleNum);
+	void indirectYR(uint8_t cycleNum);
 
 	// Flag Control
 	void flagN(uint8_t result);
@@ -91,6 +95,7 @@ public:
 	void AND();
 	void ARR(); // Undocumented
 	void ASL();
+	void ASL_A();
 	void AXS(); // Undocumented
 	void BCC();
 	void BCS();
@@ -128,6 +133,7 @@ public:
 	void LDX();
 	void LDY();
 	void LSR();
+	void LSR_A();
 	void NOP();
 	void ORA();
 	void PHA();
@@ -136,7 +142,9 @@ public:
 	void PLP();
 	void RLA(); // Undocumented
 	void ROL();
+	void ROL_A();
 	void ROR();
+	void ROR_A();
 	void RRA(); // Undocumented
 	void RTI();
 	void RTS();

@@ -2,10 +2,12 @@
 
 #include "ScreenTest.h"
 
+#define MAKE_TEST(testClass, testType, testCategory, testName) \
+		std::make_unique<testClass>(testType, testCategory, testName)->makeTest()
+
 int main(int argc, char* argv[]) {
 	try {
-		std::make_unique<ScreenTest>
-			("CPU_Tests"s, "instr_test-v5"s, "16-special"s)->makeTest();
+
 	} catch(const TestFailException& e) {
 		fs::remove_all(e.framesFolder);
 		fs::create_directory(e.framesFolder);
