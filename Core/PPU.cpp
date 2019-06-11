@@ -249,6 +249,7 @@ void PPU::fetchBGData() {
 }
 
 void PPU::evaluateSprites() { // Sprite Evaluation
+	assert(((this->MASK >> 3) & 0x1) == 1 || ((this->MASK >> 4) & 0x1) == 1);
 	if(this->spritesFound < 8 && !this->spriteEvaluationDone) {
 		if(this->cycleNum % 2 == 1) this->secondaryOAMBuffer = this->mem.OAM[this->OAMADDR];
 		else {
