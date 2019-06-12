@@ -1,8 +1,11 @@
 #include "stdafx.h"
+
 #include "BaseMapper.h"
+
 #include "NROM.h"
 #include "MMC1.h"
 #include "UxROM.h"
+#include "CNROM.h"
 
 
 BaseMapper::BaseMapper(iNESHeader header) : header(header) {
@@ -21,8 +24,13 @@ std::unique_ptr<BaseMapper> BaseMapper::getMapper(iNESHeader header) {
 		break;
 	case 0x02:
 		return std::make_unique<UxROM>(header);
+		break;
+	case 0x03:
+		return std::make_unique<CNROM>(header);
+		break;
 	default:
 		throw std::runtime_error("Mapper " + std::to_string(header.mapperID) + " is not supported!");
+		break;
 	}
 }
 
