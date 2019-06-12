@@ -105,6 +105,9 @@
     <ClCompile Include="glad.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="UxROM.cpp">
+      <Filter>Source Files\Memory\Mappers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="PPU.h">
@@ -154,6 +157,9 @@
     </ClInclude>
     <ClInclude Include="stdafx.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UxROM.h">
+      <Filter>Header Files\Memory\Mappers</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
