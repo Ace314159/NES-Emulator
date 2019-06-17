@@ -91,6 +91,11 @@ void Window::renderScreen() {
 	// Display to screen
 	glfwSwapBuffers(window);
 	glfwPollEvents();
+	// Send notification for tests
+#ifdef _DEBUG
+	glDebugMessageInsert(GL_DEBUG_SOURCE_APPLICATION, GL_DEBUG_TYPE_OTHER, 0xABC,
+		GL_DEBUG_SEVERITY_NOTIFICATION, -1, "Screen Rendered!");
+#endif
 
 	// Update window title
 	auto curTime = std::chrono::high_resolution_clock::now();

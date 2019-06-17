@@ -94,10 +94,6 @@ TEST(PPU_Tests, NMISync) {
 	RUN_TEST(ScreenTest, "PPU_Tests", "nmi_sync", "demo_pal");
 }
 
-TEST(PPU_Tests, NTSCTorture) {
-	RUN_TEST(ScreenTest, "PPU_Tests", "ntsc_torture", "ntsc_torture");
-}
-
 TEST(PPU_Tests, OAMRead) {
 	RUN_TEST(ScreenTest, "PPU_Tests", "oam_read", "oam_read");
 }
@@ -123,9 +119,8 @@ TEST(PPU_Tests, spriteHit) {
 	RUN_TEST(ScreenTest, "PPU_Tests", "ppu_sprite_hit", "06-right_edge");
 	RUN_TEST(ScreenTest, "PPU_Tests", "ppu_sprite_hit", "07-screen_bottom");
 	RUN_TEST(ScreenTest, "PPU_Tests", "ppu_sprite_hit", "08-double_height");
-	RUN_TEST(ScreenTest, "PPU_Tests", "ppu_sprite_hit", "09.timing_basics");
+	RUN_TEST(ScreenTest, "PPU_Tests", "ppu_sprite_hit", "09-timing");
 	RUN_TEST(ScreenTest, "PPU_Tests", "ppu_sprite_hit", "10-timing_order");
-	RUN_TEST(ScreenTest, "PPU_Tests", "ppu_sprite_hit", "11.edge_timing");
 }
 
 TEST(PPU_Tests, spriteOverflow) {

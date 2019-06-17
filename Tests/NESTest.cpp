@@ -1,10 +1,11 @@
 #include "stdafx.h"
 #include "nesTest.h"
 
+std::array<Color, Window::width* Window::height> NESTest::prevScreenTexPixels;
 
 NESTest::NESTest(const fs::path& testFilePath) : NES(testFilePath) {
 	this->framesFolder = testFilePath.parent_path() / testFilePath.stem();
-	std::fill(this->prevScreenTexPixels.begin(), this->prevScreenTexPixels.end(), Color{0, 0, 0});
+	std::fill(NESTest::prevScreenTexPixels.begin(), NESTest::prevScreenTexPixels.end(), Color{0, 0, 0});
 
 	std::basic_ifstream<GLubyte> paletteData("palette.pal", std::ios::binary);
 	if(!paletteData.good()) {
@@ -14,9 +15,9 @@ NESTest::NESTest(const fs::path& testFilePath) : NES(testFilePath) {
 		this->ppu.paletteTable.size() * 3);
 }
 
-void NESTest::dumpScreen() {
-	if(this->ppu.scanlineNum != 241 || this->ppu.cycleNum != 1 ||
-		this->prevScreenTexPixels == this->ppu.window.screenTexPixels) return;
+void NESTest::dumpScreen() const {
+	assert(this->ppu.scanlineNum == 241 && this->ppu.cycleNum == 1);
+	if(this->prevScreenTexPixels == this->ppu.window.screenTexPixels) return;
 	fs::path filePath = this->framesFolder / (std::to_string(this->cycleNum) + ".ppm");
 	std::ofstream file(filePath, std::ios::binary);
 
@@ -24,7 +25,7 @@ void NESTest::dumpScreen() {
 	file << this->screenDumpHeader;
 	std::copy(this->ppu.window.screenTexPixels.begin(), this->ppu.window.screenTexPixels.end(),
 		std::ostream_iterator<Color>(file));
-	this->prevScreenTexPixels = this->ppu.window.screenTexPixels;
+	NESTest::prevScreenTexPixels = this->ppu.window.screenTexPixels;
 }
 
 void NESTest::tick() {

@@ -14,7 +14,7 @@ public:
 		"P6\n" +std::to_string(Window::width) + " " + std::to_string(Window::height) + "\n255\n";
 	std::filesystem::path framesFolder;
 
-	std::array<Color, Window::width * Window::height> prevScreenTexPixels;
-	void dumpScreen();
+	static std::array<Color, Window::width * Window::height> prevScreenTexPixels;
+	void dumpScreen() const;
 };
 

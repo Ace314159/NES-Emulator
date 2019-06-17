@@ -14,7 +14,6 @@ int main(int argc, char* argv[]) {
 		std::ofstream file(e.framesFolder / "FAIL");
 		file << e.error;
 		std::cout << e.error;
-		return -1;
 	}
 	return 0;
 }
