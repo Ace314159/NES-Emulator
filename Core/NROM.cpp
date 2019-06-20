@@ -24,7 +24,7 @@ uint8_t NROM::getCHRBank(uint16_t& addr) {
 	return 0;
 }
 
-uint16_t NROM::getCHRBankSize() {
+uint16_t NROM::getCHRBankSize(uint16_t addr) {
 	return 0x2000;
 }
 

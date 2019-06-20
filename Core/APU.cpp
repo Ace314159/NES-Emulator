@@ -25,7 +25,7 @@ void APU::emulateCycle() {
 			this->frameCounterCycle = -1;
 			this->resetFrameCounter = false;
 			this->frameCounter = this->newFrameCounter;
-			if((this->frameCounter >> 6) & 0x1) this->mem.IRQCalled = false;
+			if((this->frameCounter >> 6) & 0x1) this->mem.mapper->IRQCalled = false;
 			if(this->frameCounter >> 7) {
 				this->quarterFrame();
 				this->halfFrame();
@@ -38,7 +38,7 @@ void APU::emulateCycle() {
 void APU::handleRegisterReads() {
 	switch(this->registerRead) {
 	case 0x4015:
-		this->mem.IRQCalled = false;
+		this->mem.mapper->IRQCalled = false;
 		break;
 	}
 	this->registerRead = 0;
@@ -150,7 +150,7 @@ void APU::halfFrame() {
 }
 
 void APU::changeIRQ() {
-	this->mem.IRQCalled = !((this->frameCounter >> 6) & 0x1);
+	this->mem.mapper->IRQCalled = !((this->frameCounter >> 6) & 0x1);
 }
 
 

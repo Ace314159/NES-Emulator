@@ -18,21 +18,21 @@ public:
 
 	// Useful Variables
 	unsigned int CPUcycleCount = 0;
-	unsigned prevCPUCycleCount;
+	bool IRQCalled = false;
 	iNESHeader header;
 
 
 	// Useful Functions
 	virtual bool canWriteRAM8(uint16_t addr) = 0;
 	virtual void wroteRAM8(uint16_t addr, uint8_t data) = 0;
+	virtual void setPPUBusAddress(uint16_t addr, int cycleNum) {};
 	virtual uint8_t getPRGBank(uint16_t& addr) = 0; // Is reference in order to offset addr when accessing PRG ROM
 	virtual uint16_t getPRGBankSize() = 0;
 	virtual uint8_t getCHRBank(uint16_t& addr) = 0; // Is reference in order to offset addr when accessing CHR
-	virtual uint16_t getCHRBankSize() = 0;
+	virtual uint16_t getCHRBankSize(uint16_t addr) = 0;
 	virtual bool WRAMEnabled() = 0;
 	
 	void setNametableMirroringType(NametableMirroringType type);
 	static std::unique_ptr<BaseMapper> getMapper(iNESHeader header);
-
 };
 

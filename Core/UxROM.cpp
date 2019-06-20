@@ -28,7 +28,7 @@ uint8_t UxROM::getCHRBank(uint16_t& addr) {
 	return 0;
 }
 
-uint16_t UxROM::getCHRBankSize() {
+uint16_t UxROM::getCHRBankSize(uint16_t addr) {
 	return 0x2000;
 }
 

@@ -34,7 +34,7 @@ void NES::loadRom(const fs::path& romFilePath) {
 
 	// Initialize mapper
 #ifdef _DEBUG
-	cout << "Using Mapper " << (int)header.mapperID << endl;
+	// cout << "Using Mapper " << (int)header.mapperID << endl;
 #endif
 	this->mem.mapper = BaseMapper::getMapper(header);
 

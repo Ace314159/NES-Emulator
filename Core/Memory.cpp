@@ -50,7 +50,10 @@ uint8_t Memory::getRAM8(uint16_t addr) {
 			break;
 		case 0x2007:
 			this->ppuRegisterRead = 0x2007;
-			if(this->ppu.currentVramAddr <= 0x3EFF) this->cpuPpuBus = this->ppuDATAReadBuffer;
+			if(this->ppu.currentVramAddr <= 0x3EFF) {
+				this->cpuPpuBus = this->ppuDATAReadBuffer;
+				this->mapper->setPPUBusAddress(this->ppuDATAReadBuffer, this->ppu.cycleNum);
+			}
 			else this->cpuPpuBus = this->getPaletteLoc(this->ppu.currentVramAddr - 0x3F00);
 			break;
 		default:
@@ -66,7 +69,7 @@ uint8_t Memory::getRAM8(uint16_t addr) {
 		switch(addr) {
 		case 0x4015:
 			this->apuRegisterRead = 0x4015;
-			return (this->IRQCalled << 6) | ((this->apu.noise.lengthCounter > 0) << 3) |
+			return (this->mapper->IRQCalled << 6) | ((this->apu.noise.lengthCounter > 0) << 3) |
 				((this->apu.triangle.lengthCounter > 0) << 2) | ((this->apu.pulse2.lengthCounter > 0) << 1) |
 				((this->apu.pulse1.lengthCounter > 0) << 0);
 			break;
@@ -132,15 +135,15 @@ void Memory::setRAM8(uint16_t addr, uint8_t data) {
 	}
 }
 
-
 // PPU
 uint8_t& Memory::getNametableLoc(uint16_t offsettedAddr) {
 	return *this->mapper->nametablePtrs[offsettedAddr];
 }
 
 uint8_t& Memory::getCHRLoc(uint16_t addr) {
+	this->mapper->setPPUBusAddress(addr, this->ppu.cycleNum);
 	size_t bank = this->mapper->getCHRBank(addr); // Offsets addr
-	size_t bankSize = this->mapper->getCHRBankSize();
+	size_t bankSize = this->mapper->getCHRBankSize(addr);
 	return this->CHR[bank * bankSize + addr];
 }
 

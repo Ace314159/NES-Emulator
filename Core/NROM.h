@@ -12,7 +12,7 @@ public:
 	uint8_t getPRGBank(uint16_t& addr) override;
 	uint16_t getPRGBankSize() override;
 	uint8_t getCHRBank(uint16_t& addr) override;
-	uint16_t getCHRBankSize() override;
+	uint16_t getCHRBankSize(uint16_t addr) override;
 	bool WRAMEnabled() override;
 };
 

@@ -36,6 +36,7 @@ void PPU::handleRegisterReads() {
 			mem.ppuDATAReadBuffer = mem.getVRAM8(this->currentVramAddr & ~0x1000);
 		}
 		this->currentVramAddr += 1 + ((this->CTRL >> 2) & 0x1) * 31;
+		this->mem.mapper->setPPUBusAddress(this->currentVramAddr, this->cycleNum);
 		break;
 	}
 	this->registerRead = 0;
@@ -71,6 +72,7 @@ void PPU::handleRegisterWrites() {
 			// Sets low 8 bits to the bits in ADDR
 			this->tempVramAddr = (this->tempVramAddr & ~0xFF) | this->ADDR;
 			this->currentVramAddr = this->tempVramAddr; // Gets all 8 bits
+			this->mem.mapper->setPPUBusAddress(this->currentVramAddr, this->cycleNum);
 		} else {
 			// Sets Bits [8-13] to the low 6 bits in ADDR and clears bit 14
 			this->tempVramAddr = (this->tempVramAddr & ~(0x7F << 8)) | ((this->ADDR & 0x3F) << 8);
@@ -80,6 +82,7 @@ void PPU::handleRegisterWrites() {
 	case 0x2007: // DATA
 		mem.setVRAM8(this->currentVramAddr++ & 0x3FFF, this->DATA);
 		this->currentVramAddr += ((this->CTRL >> 2) & 0x1) * 31; // Ads extra 31 if bit 2 is set
+		this->mem.mapper->setPPUBusAddress(this->currentVramAddr, this->cycleNum);
 		break;
 	case 0x4014: // OAM DMA
 		mem.DMAPage = this->OAMDMA;
@@ -141,6 +144,7 @@ void PPU::emulateDot() {
 		this->STATUS |= (1 << 7); // Set VBlank flag
 		this->window.renderScreen();
 	} else if(this->scanlineNum != -1 && this->scanlineNum < 240 && this->cycleNum <= 256)
+		// Rendering is disabled but still needs to output color - 0, 0 doesn't matter
 		this->setDot(this->getBGColor(0, 0));
 
 	// Skip one cycle if odd frame and is rendering
@@ -276,7 +280,7 @@ void PPU::evaluateSprites() { // Sprite Evaluation
 void PPU::fetchSpriteData() { // Sprite Fetches
 	this->OAMADDR = 0;
 	int spriteNum = (this->cycleNum - 1) / 8 - 32;
-	if(spriteNum >= this->prevSpritesFound) return;
+	// if(spriteNum >= this->prevSpritesFound) return;
 	bool is8x16 = (this->CTRL >> 5) & 0x1;
 	// isVerticallyFlipped is used before spriteAttrs is set, so get data from Secondary OAM
 	bool isVerticallyFlipped = (this->secondaryOAM[spriteNum * 4 + 2] >> 7) & 0x1;
@@ -384,9 +388,9 @@ uint8_t PPU::getBGColor(uint8_t paletteNum, uint8_t colorNum) {
 		if(colorNum == 0) color = mem.getPaletteLoc(0);
 		else color = mem.getPaletteLoc((paletteNum << 2) | colorNum);
 	} else {
-		if(this->currentVramAddr >= 0x3F00 && this->currentVramAddr <= 0x3FFF) 
+		if(this->currentVramAddr > 0x3F00 && this->currentVramAddr < 0x4000) 
 			color = mem.getPaletteLoc(this->currentVramAddr - 0x3F00);
-		color = mem.getPaletteLoc(0);
+		else color = mem.getPaletteLoc(0);
 	}
 	return color;
 }

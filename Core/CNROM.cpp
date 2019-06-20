@@ -24,7 +24,7 @@ uint8_t CNROM::getCHRBank(uint16_t& addr) {
 	return this->CHRBank;
 }
 
-uint16_t CNROM::getCHRBankSize() {
+uint16_t CNROM::getCHRBankSize(uint16_t addr) {
 	return 0x2000;
 }
 

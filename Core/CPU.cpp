@@ -320,9 +320,9 @@ void CPU::lastOperationCycle() {
 	this->mem.inIRQ = false;
 	this->mem.inDMA = false;
 	if(this->mem.NMICalled) mem.inNMI = true;
-	else if(this->mem.IRQCalled && !this->P.I()) {
+	else if(this->mem.mapper->IRQCalled && !this->P.I()) {
 		this->mem.inIRQ = true;
-		this->mem.IRQCalled = false;
+		this->mem.mapper->IRQCalled = false;
 	}
 	this->mem.NMICalled = false;
 }
@@ -860,7 +860,7 @@ void CPU::SED() {
 
 void CPU::SEI() {
 	this->P.I() = 1;
-	if(this->mem.IRQCalled) this->mem.inIRQ = true;
+	if(this->mem.mapper->IRQCalled) this->mem.inIRQ = true;
 	this->lastOperationCycle();
 }
 

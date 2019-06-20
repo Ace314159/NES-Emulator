@@ -25,7 +25,7 @@ public:
 
 	// Useful variables to determine what to render
 	int scanlineNum = 0;
-	int cycleNum = 30;
+	int cycleNum = 0;
 	// Background
 	uint16_t currentVramAddr = 0; // yyyNNYYYYYXXXXX
 	uint16_t tempVramAddr = 0; // yyyNNYYYYYXXXXX

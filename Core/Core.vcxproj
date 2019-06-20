@@ -34,6 +34,7 @@
     <ClCompile Include="iNESHeader.cpp" />
     <ClCompile Include="Memory.cpp" />
     <ClCompile Include="MMC1.cpp" />
+    <ClCompile Include="MMC3.cpp" />
     <ClCompile Include="NES.cpp" />
     <ClCompile Include="Noise.cpp" />
     <ClCompile Include="NROM.cpp" />
@@ -60,6 +61,7 @@
     <ClInclude Include="iNESHeader.h" />
     <ClInclude Include="Memory.h" />
     <ClInclude Include="MMC1.h" />
+    <ClInclude Include="MMC3.h" />
     <ClInclude Include="NES.h" />
     <ClInclude Include="Noise.h" />
     <ClInclude Include="NROM.h" />

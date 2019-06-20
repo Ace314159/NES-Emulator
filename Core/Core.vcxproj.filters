@@ -108,6 +108,12 @@
     <ClCompile Include="UxROM.cpp">
       <Filter>Source Files\Memory\Mappers</Filter>
     </ClCompile>
+    <ClCompile Include="CNROM.cpp">
+      <Filter>Source Files\Memory\Mappers</Filter>
+    </ClCompile>
+    <ClCompile Include="MMC3.cpp">
+      <Filter>Source Files\Memory\Mappers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="PPU.h">
@@ -159,6 +165,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="UxROM.h">
+      <Filter>Header Files\Memory\Mappers</Filter>
+    </ClInclude>
+    <ClInclude Include="CNROM.h">
+      <Filter>Header Files\Memory\Mappers</Filter>
+    </ClInclude>
+    <ClInclude Include="MMC3.h">
       <Filter>Header Files\Memory\Mappers</Filter>
     </ClInclude>
   </ItemGroup>
