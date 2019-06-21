@@ -8,7 +8,9 @@ class CPU {
 public:
 	class StatusRegister {
 	public:
-		std::bitset<8> byte{0x34};
+		std::bitset<8> byte{0x04};
+		uint8_t getByte() { return (uint8_t)(byte.to_ulong() | 0x20); }
+		void setByte(uint8_t val) { byte = val & 0xCF; }
 
 		std::bitset<8>::reference N() { return byte[7]; } // Negative
 		std::bitset<8>::reference V() { return byte[6]; } // Overflow
@@ -20,10 +22,7 @@ public:
 		std::bitset<8>::reference C() { return byte[0]; } // Carry
 	};
 
-	enum class OpcodeType { RMW, OTHER };
-	static OpcodeType opcodeTypes[256];
-
-
+	
 	CPU(Memory& m);
 	Memory& mem;
 
@@ -36,66 +35,85 @@ public:
 	StatusRegister P; // Processor Status Register
 
 	// Useful variables to determine what to execute
-	uint8_t effectiveAddrLow; // Acts as the low bit for the Effective, Base, and Indirect Address
-	uint8_t effectiveAddrHigh;
-	uint16_t effectiveAddr; // Acts as the Effective, Base, and Indirect Address
-	uint8_t dataV; // data that is not a reference (value), if data changes between cycles
 	uint8_t opcode;
-	bool gotData = false;
+	uint8_t operand;
+	uint16_t effectiveAddr;
 	bool doingIllegalOpcode = false;
-	uint8_t addressingCyclesUsed;
-	uint8_t cycleNum = 0;
 
 	// Get Appropriate Addressing Mode or Operation
-	void unknownOpcode();
-	static void(CPU::*addressingModes[256])(uint8_t cycleNum);
+	static void(CPU::*addressingModes[256])();
 	static void(CPU::*operations[256])();
 
 	// Other
 	void OAMDMA();
 
-	void emulateCycle(); // Emulates a single clock cycle
+	void emulateInstr(); // Emulates a single instruction
+
+	// Memory Accesses
+	uint8_t getMem(uint16_t addr);
+	void setMem(uint16_t addr, uint8_t data);
+	void clocked();
+	// Utilities for Repetitive Stuff
+	void dummyRead() { this->getMem(this->PC); }
+	uint8_t readOperand() { return this->operand = this->getMem(this->effectiveAddr); }
+	uint8_t readByte() { return this->getMem(this->PC++); }
+	uint16_t readWord() { return this->readByte() | (this->readByte() << 8); }
+	uint16_t readWord(uint16_t addr) { return this->getMem(addr) | (this->getMem(addr + 1) << 8); }
+	bool pageCrossed(uint16_t addr, uint8_t operand) { return ((addr + operand) & 0xFF00) != (addr & 0xFF00); }
+	bool pageCrossed(uint16_t addr, int8_t operand) { return ((addr + operand) & 0xFF00) != (addr & 0xFF00); }
+	void setReg(uint8_t& reg, uint8_t val) { reg = val; this->flagN(val); this->flagZ(val); }
+	void setA(uint8_t val) { this->setReg(this->A, val); };
+	void setX(uint8_t val) { this->setReg(this->X, val); };
+	void setY(uint8_t val) { this->setReg(this->Y, val); };
 
 	// Addressing Modes
-	void lastAddressingCycle(uint16_t newEffectiveAddr); // Run on the last addressing cycle
-	void implied(uint8_t cycleNum);
-	void immediate(uint8_t cycleNum);
-	void absolute(uint8_t cycleNum);
-	void zeroPage(uint8_t cycleNum);
-	void relative(uint8_t cycleNum);
-	void absoluteX(uint8_t cycleNum);
-	void absoluteXR(uint8_t cycleNum);
-	void absoluteY(uint8_t cycleNum);
-	void absoluteYR(uint8_t cycleNum);
-	void zeroPageX(uint8_t cycleNum);
-	void zeroPageY(uint8_t cycleNum);
-	void indirectX(uint8_t cycleNum);
-	void indirectY(uint8_t cycleNum);
-	void indirectYR(uint8_t cycleNum);
+	void implied();
+	void immediate();
+	void relative();
+	
+	void absolute();
+	void absoluteI(uint8_t& I);
+	void absoluteIR(uint8_t& I);
+	void absoluteX() { return this->absoluteI(this->X); }
+	void absoluteXR() { return this->absoluteIR(this->X); }
+	void absoluteY() { return this->absoluteI(this->Y); }
+	void absoluteYR() { return this->absoluteIR(this->Y); }
+	
+	void zeroPage();
+	void zeroPageI(uint8_t& I);
+	void zeroPageX() { return this->zeroPageI(this->X); }
+	void zeroPageY() { return this->zeroPageI(this->Y); }
+	
+	void indirectX();
+	void indirectY();
+	void indirectYR();
 
 	// Flag Control
 	void flagN(uint8_t result);
 	void flagZ(uint8_t result);
 	void flagC(uint16_t result);
-	void flagV(uint8_t result);
 
 	// Stack Operations
 	void stackPush(uint8_t data);
+	void stackPush(uint16_t data) { this->stackPush((uint8_t)(data >> 8)); this->stackPush((uint8_t)data);  }
 	uint8_t stackPull();
+	uint16_t stackPullWord() { return this->stackPull() | (this->stackPull() << 8); };
 
 	// Operations
-	void lastOperationCycle(); // Run on the last cycle
-	void interrupt(uint16_t vectorLocation);
-	void RMW(uint8_t result); // Read, Modify, Write Operations
+	void interrupt(uint16_t vectorLocation, bool isBRK);
+	uint8_t RMW(uint8_t(CPU::*operation)(uint8_t val)); // Read, Modify, Write Operations
 	void branchOp(bool branchResult); // Branch Operations
-	void ADC();
+	
+	void ADD(uint8_t val);
+	void ADC() { this->ADD(this->readOperand()); };
 	void AHX(); // Undocumented
 	void ALR(); // Undocumented
 	void ANC(); // Undocumented
 	void AND();
 	void ARR(); // Undocumented
-	void ASL();
+	uint8_t ASL(uint8_t val) { return val << 1; }
 	void ASL_A();
+	void ASL_M();
 	void AXS(); // Undocumented
 	void BCC();
 	void BCS();
@@ -111,20 +129,24 @@ public:
 	void CLD();
 	void CLI();
 	void CLV();
-	void CMP();
-	void CPX();
-	void CPY();
+	void CMP(uint8_t reg, uint8_t val);
+	void CPA() { this->CMP(this->A, this->readOperand()); };
+	void CPX() { this->CMP(this->X, this->readOperand()); };
+	void CPY() { this->CMP(this->Y, this->readOperand()); };
 	void DCP(); // Undocumented
+	uint8_t dec(uint8_t val) { return val - 1; }
 	void DEC();
 	void DEX();
 	void DEY();
 	void EOR();
 	void IGN(); // Undocumented
+	uint8_t inc(uint8_t val) { return val + 1; }
 	void INC();
 	void INX();
 	void INY();
 	void ISC(); // Undocumented
-	void JMP();
+	void JMP_Abs();
+	void JMP_Ind();
 	void JSR();
 	void KIL(); // Undocumented
 	void LAS(); // Undocumented
@@ -132,8 +154,9 @@ public:
 	void LDA();
 	void LDX();
 	void LDY();
-	void LSR();
+	uint8_t LSR(uint8_t val) { return val >> 1; }
 	void LSR_A();
+	void LSR_M();
 	void NOP();
 	void ORA();
 	void PHA();
@@ -141,15 +164,17 @@ public:
 	void PLA();
 	void PLP();
 	void RLA(); // Undocumented
-	void ROL();
+	uint8_t ROL(uint8_t val) { return (val << 1) | (int)this->P.C(); };
 	void ROL_A();
-	void ROR();
+	void ROL_M();
+	uint8_t ROR(uint8_t val) { return (val >> 1) | (this->P.C() << 7); };
 	void ROR_A();
+	void ROR_M();
 	void RRA(); // Undocumented
 	void RTI();
 	void RTS();
 	void SAX(); // Undocumented
-	void SBC();
+	void SBC() { this->ADD(~this->readOperand()); }
 	void SEC();
 	void SED();
 	void SEI();

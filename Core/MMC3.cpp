@@ -13,13 +13,13 @@ void MMC3::wroteRAM8(uint16_t addr, uint8_t data) {
 		} else {
 			uint8_t Rval = this->bankSelect & 0x7;
 			if(Rval >= 6) data &= ~0xC0;
-			else if(Rval <= 1) data &= ~0x1;
+			else if(Rval <= 1) data &= ~0x01;
 			this->R[this->bankSelect & 0x7] = data;
 		}
 	} else if(addr < 0xC000) {
 		if(addr % 2 == 0) {
 			if(this->nametableMirroringType != NametableMirroringType::FOUR) {
-				if(data & 0x1) this->setNametableMirroringType(NametableMirroringType::HORIZONTAL);
+				if(data & 0x01) this->setNametableMirroringType(NametableMirroringType::HORIZONTAL);
 				else this->setNametableMirroringType(NametableMirroringType::VERTICAL);
 			}
 		} else {
@@ -58,7 +58,7 @@ void MMC3::setPPUBusAddress(uint16_t addr, int cycleNum) {
 }
 
 uint8_t MMC3::getPRGBank(uint16_t& addr) {
-	bool bankMode = (this->bankSelect >> 6) & 0x1;
+	bool bankMode = (this->bankSelect >> 6) & 0x01;
 	uint8_t possibilities[2] = {this->R[6], static_cast<uint8_t>(this->header.prgRomSize * 2 - 2)};
 	if(addr < 0xA000) {
 		addr -= 0x8000;

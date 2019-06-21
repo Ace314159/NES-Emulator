@@ -12,7 +12,7 @@ void MMC1::wroteRAM8(uint16_t addr, uint8_t data) {
 		this->shiftRegCount = 0;
 		this->shiftReg = 0;
 	} else {
-		this->shiftReg |= (data & 0x1) << this->shiftRegCount;
+		this->shiftReg |= (data & 0x01) << this->shiftRegCount;
 		this->shiftRegCount++;
 		if(this->shiftRegCount == 5) {
 			if(addr < 0xA000) {

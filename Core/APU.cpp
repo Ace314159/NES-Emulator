@@ -6,10 +6,7 @@
 APU::APU(Memory& m) : mem(m) { this->fillLookupTables(); }
 
 void APU::emulateCycle() {
-	assert(!this->registerRead || !this->registerWritten);
-	if(this->registerRead) this->handleRegisterReads();
 	this->emulateFrameCounter(); // Clock represents half cycle
-	if(this->registerWritten) this->handleRegisterWrites();
 
 	this->triangle.emulateCycle();
 	this->triangle.dontChangeLengthCounter = false;
@@ -25,7 +22,7 @@ void APU::emulateCycle() {
 			this->frameCounterCycle = -1;
 			this->resetFrameCounter = false;
 			this->frameCounter = this->newFrameCounter;
-			if((this->frameCounter >> 6) & 0x1) this->mem.mapper->IRQCalled = false;
+			if((this->frameCounter >> 6) & 0x01) this->mem.mapper->IRQCalled = false;
 			if(this->frameCounter >> 7) {
 				this->quarterFrame();
 				this->halfFrame();
@@ -35,17 +32,16 @@ void APU::emulateCycle() {
 	this->queueAudio();
 }
 
-void APU::handleRegisterReads() {
-	switch(this->registerRead) {
+void APU::registerRead(uint16_t addr) {
+	switch(addr) {
 	case 0x4015:
 		this->mem.mapper->IRQCalled = false;
 		break;
 	}
-	this->registerRead = 0;
 }
 
-void APU::handleRegisterWrites() {
-	switch(this->registerWritten) {
+void APU::registerWritten(uint16_t addr) {
+	switch(addr) {
 	// Pulse 1
 	case 0x4001:
 		this->pulse1.sweepReloadFlag = true;
@@ -75,16 +71,15 @@ void APU::handleRegisterWrites() {
 		this->noise.loadLengthCounter();
 		break;
 	case 0x4015:
-		this->pulse1.enabled = (this->status >> 0) & 0x1;
-		this->pulse2.enabled = (this->status >> 1) & 0x1;
-		this->triangle.enabled = (this->status >> 2) & 0x1;
-		this->noise.enabled = (this->status >> 3) & 0x1;
+		this->pulse1.enabled = (this->status >> 0) & 0x01;
+		this->pulse2.enabled = (this->status >> 1) & 0x01;
+		this->triangle.enabled = (this->status >> 2) & 0x01;
+		this->noise.enabled = (this->status >> 3) & 0x01;
 		break;
 	case 0x4017:
 		this->resetFrameCounter = true;
 		break;
 	}
-	this->registerWritten = 0;
 }
 
 void APU::emulateFrameCounter() {
@@ -150,7 +145,7 @@ void APU::halfFrame() {
 }
 
 void APU::changeIRQ() {
-	this->mem.mapper->IRQCalled = !((this->frameCounter >> 6) & 0x1);
+	this->mem.mapper->IRQCalled = !((this->frameCounter >> 6) & 0x01);
 }
 
 

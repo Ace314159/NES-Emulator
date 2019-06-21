@@ -41,7 +41,6 @@ uint8_t Memory::getRAM8(uint16_t addr) {
 	case RAMAddrType::PPU_REGISTER:
 		switch(addr) {
 		case 0x2002:
-			this->ppuRegisterRead = 0x2002;
 			this->cpuPpuBus = addrValue = (addrValue & ~0x1F) | (this->cpuPpuBus & 0x1F);
 			break;
 		case 0x2004:
@@ -49,7 +48,6 @@ uint8_t Memory::getRAM8(uint16_t addr) {
 			this->cpuPpuBus = this->OAM[this->ppuRegisters[0x3]]; // Gets OAM data at OAMADDR
 			break;
 		case 0x2007:
-			this->ppuRegisterRead = 0x2007;
 			if(this->ppu.currentVramAddr <= 0x3EFF) {
 				this->cpuPpuBus = this->ppuDATAReadBuffer;
 				this->mapper->setPPUBusAddress(this->ppuDATAReadBuffer, this->ppu.cycleNum);
@@ -59,21 +57,22 @@ uint8_t Memory::getRAM8(uint16_t addr) {
 		default:
 			break;
 		}
+		this->ppu.registerRead(addr);
 		return this->cpuPpuBus;
 		break;
 	case RAMAddrType::APU_REGISTER:
 		if(addr == 0x4016) { // Controller 1
 			if(this->buttons1Index < 8) return this->buttons1[this->buttons1Index++];
-			else return 0x1;
+			else return 0x01;
 		}
 		switch(addr) {
 		case 0x4015:
-			this->apuRegisterRead = 0x4015;
 			return (this->mapper->IRQCalled << 6) | ((this->apu.noise.lengthCounter > 0) << 3) |
 				((this->apu.triangle.lengthCounter > 0) << 2) | ((this->apu.pulse2.lengthCounter > 0) << 1) |
 				((this->apu.pulse1.lengthCounter > 0) << 0);
 			break;
 		}
+		this->apu.registerRead(addr);
 		return addrValue;
 		break;
 	case RAMAddrType::WRAM:
@@ -103,12 +102,11 @@ void Memory::setRAM8(uint16_t addr, uint8_t data) {
 		if(addr == 0x2002 || (addr == 0x2004 && this->ppu.scanlineNum < 240 && (this->ppuRegisters[1] >> 3) & 0x3))
 			return;
 		addrValue = this->cpuPpuBus;
-		this->ppuRegisterWritten = addr;
 		// Set low 5 bits of PPUSTATUS - TODO: Find better way
 		this->ppuRegisters[0x2] = (this->ppuRegisters[0x2] & ~0x1F) | (this->cpuPpuBus & 0x1F);
+		this->ppu.registerWritten(addr);
 		break;
 	case RAMAddrType::APU_REGISTER:
-		if(addr != 0x4016) this->apuRegisterWritten = addr;
 		switch(addr) {
 		case 0x4015:
 			addrValue = (addrValue & ~0x1F) | (data & 0x1F);
@@ -120,6 +118,7 @@ void Memory::setRAM8(uint16_t addr, uint8_t data) {
 			addrValue = data;
 			break;
 		}
+		if(addr != 0x4016) this->apu.registerWritten(addr);
 		break;
 	case RAMAddrType::WRAM:
 		addrValue = data;

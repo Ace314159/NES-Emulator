@@ -13,14 +13,14 @@ public:
 	Window window{};
 
 	// Registers
-	uint8_t& CTRL = mem.ppuRegisters[0x0] = 0;
-	uint8_t& MASK = mem.ppuRegisters[0x1] = 0;
-	uint8_t& STATUS = mem.ppuRegisters[0x2] = 0xA0;
-	uint8_t& OAMADDR = mem.ppuRegisters[0x3] = 0;
-	uint8_t& OAMDATA = mem.ppuRegisters[0x4];
-	uint8_t& SCROLL = mem.ppuRegisters[0x5] = 0;
-	uint8_t& ADDR = mem.ppuRegisters[0x6] = 0;
-	uint8_t& DATA = mem.ppuRegisters[0x7] = 0;
+	uint8_t& CTRL = mem.ppuRegisters[0x00] = 0;
+	uint8_t& MASK = mem.ppuRegisters[0x01] = 0;
+	uint8_t& STATUS = mem.ppuRegisters[0x02] = 0;
+	uint8_t& OAMADDR = mem.ppuRegisters[0x03] = 0;
+	uint8_t& OAMDATA = mem.ppuRegisters[0x04];
+	uint8_t& SCROLL = mem.ppuRegisters[0x05] = 0;
+	uint8_t& ADDR = mem.ppuRegisters[0x06] = 0;
+	uint8_t& DATA = mem.ppuRegisters[0x07] = 0;
 	uint8_t& OAMDMA = mem.apuRegisters[0x14];
 
 	// Useful variables to determine what to render
@@ -61,14 +61,12 @@ public:
 	// Useful variables to handle register reads and writes
 	bool canWrite = false;
 	bool oddFrame = false;
-	bool oldNMI = false;
+	bool NMIPinHigh = true;
 	uint8_t OAMDMAStartAddr;
-	uint16_t& registerRead = mem.ppuRegisterRead;
-	uint16_t& registerWritten = mem.ppuRegisterWritten;
 
 	void emulateAferCPU(); // Emulates all interactions with CPU
-	void handleRegisterReads();
-	void handleRegisterWrites();
+	void registerRead(uint16_t addr);
+	void registerWritten(uint16_t addr);
 	void emulateDot();
 
 	// Useful Functions

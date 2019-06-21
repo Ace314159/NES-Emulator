@@ -1,290 +1,146 @@
 #include "stdafx.h"
 #include "CPU.h"
 
-#include <cstdio>
 #include "PPU.h"
+#include "APU.h"
 
 CPU::CPU(Memory& m) : mem(m) {}
 
 
-void CPU::emulateCycle() {
-	if(mem.inDMA) {
-		this->OAMDMA();
-		return;
+void CPU::emulateInstr() {
+	if(this->mem.NMICalled) {
+		this->interrupt(0xFFFA, false);
+		this->mem.NMICalled = false;
+	} else if(this->mem.mapper->IRQCalled && !this->P.I()) {
+		this->interrupt(0xFFFE, false);
+		this->mem.mapper->IRQCalled = false;
 	}
-	
-	if(this->gotData) {
-		if(this->mem.inNMI) {
-			this->interrupt(0xFFFA);
-		} else if(this->mem.inIRQ) {
-			this->interrupt(0xFFFE);
-		} else {
-			(this->*(this->operations[this->opcode]))();
-		}
-	}
-	if(!this->gotData) { // gotData may change after the operation
-		if(this->cycleNum == 0) {
-			if(this->mem.inNMI || this->mem.inIRQ) {
-				this->opcode = 0x00; // BRK opcode
-			} else {
-				this->opcode = this->mem.getRAM8(this->PC++);
-				/*printf("%04X  A:%02X X:%02X Y:%02X P:%02X SP:%02X CYC:%-3d SL:%-3d  %u\n", PC - 1,
-					A, X, Y, P.byte.to_ulong() & ~0x30, S, this->mem.ppu.cycleNum, this->mem.ppu.scanlineNum,
-					this->mem.mapper->CPUcycleCount);*/
-				/*printf("%04X  %02X    A:%02X X:%02X Y:%02X P:%02X SP:%02X CYC:%3d SL:%1d\n", PC - 1, opcode,
-					A, X, Y, P.byte.to_ulong(), S, this->mem.ppu.cycleNum, this->mem.ppu.scanlineNum);*/
-			}
-		} else {
-			(this->*(this->addressingModes[this->opcode]))(this->cycleNum);
-		}
-	}
-
-	this->cycleNum++;
+#ifdef _DEBUG
+	/*printf("%04X  A:%02X X:%02X Y:%02X P:%02X SP:%02X CYC:%-3d SL:%-3d  %u\n", PC,
+		A, X, Y, P.byte.to_ulong(), S, this->mem.ppu.cycleNum, this->mem.ppu.scanlineNum,
+		this->mem.mapper->CPUcycleCount);*/
+	/*printf("%04X  %02X    A:%02X X:%02X Y:%02X P:%02X SP:%02X CYC:%3d SL:%1d\n", PC, mem.getRAM8(PC),
+		A, X, Y, P.getByte(), S, this->mem.ppu.cycleNum, this->mem.ppu.scanlineNum);*/
+#endif
+	this->opcode = this->getMem(this->PC++);
+	(this->*(this->addressingModes[this->opcode]))();
+	(this->*(this->operations[this->opcode]))();
 }
 
 
 // DMAs
 void CPU::OAMDMA() {
-	if((this->mem.DMAAddr >> 8) == this->mem.DMAPage) { // If DMAAdrr has not overflowed
-		if(this->mem.mapper->CPUcycleCount % 2 == 0 && this->mem.DMAdoneDummy) { // Read cycles are even cycles
-			this->mem.DMAVal = this->mem.getRAM8(mem.DMAAddr++); // Incremented in PPU
-		}
-		this->mem.DMAdoneDummy = true;
-	} else {
-		this->mem.DMAdoneDummy = false;
-		this->mem.inDMA = false;
+	if(this->mem.mapper->CPUcycleCount % 2 == 0) this->dummyRead();
+	this->dummyRead();
+
+	uint16_t page = this->mem.apuRegisters[0x14] << 8;
+	for(int i = 0; i < 0x100; i++) {
+		uint8_t val = this->getMem(page | i);
+		this->setMem(0x2004, val);
 	}
 }
 
 
-// Addressing Modes - Ends on the last cycle of the current instruction
-void CPU::lastAddressingCycle(uint16_t newEffectiveAddr) {
-	this->addressingCyclesUsed = this->cycleNum + 1; // Equals cycleNum after increment in lastCycle()
-	this->effectiveAddr = newEffectiveAddr;
-	if(this->opcodeTypes[this->opcode] == OpcodeType::RMW) 
-		this->dataV = this->mem.getRAM8(this->effectiveAddr);
-	this->gotData = true;
+// Memory Accesses
+uint8_t CPU::getMem(uint16_t addr) {
+	uint8_t val = this->mem.getRAM8(addr);
+	this->clocked();
+	return val;
 }
 
-void CPU::implied(uint8_t cycleNum) {
-	this->lastAddressingCycle(0);
+void CPU::setMem(uint16_t addr, uint8_t data) {
+	this->mem.setRAM8(addr, data);
+	this->clocked();
 }
 
-void CPU::immediate(uint8_t cycleNum) {
-	this->lastAddressingCycle(this->PC++);
+void CPU::clocked() {
+	this->mem.mapper->CPUcycleCount++;
+
+	this->mem.ppu.emulateDot();
+	this->mem.ppu.emulateAferCPU();
+	this->mem.ppu.emulateDot();
+	this->mem.ppu.emulateDot();
+
+	this->mem.apu.emulateCycle();
 }
 
-void CPU::absolute(uint8_t cycleNum) {
-	switch(cycleNum) {
-	case 1:
-		this->effectiveAddrLow = mem.getRAM8(this->PC++);
-		if(opcode == 0x20) this->lastAddressingCycle(0); // JSR
-		break;
-	case 2:
-		this->effectiveAddrHigh = mem.getRAM8(this->PC++);
-		if(this->opcode == 0x4C || opcode == 0x6C) this->lastAddressingCycle(0); // JMP
-		break;
-	case 3:
-		this->lastAddressingCycle(this->effectiveAddrLow | (this->effectiveAddrHigh << 8));
-		break;
-	}
+
+// Addressing Modes
+void CPU::implied() {
+	this->dummyRead();
 }
 
-void CPU::zeroPage(uint8_t cycleNum) {
-	switch(cycleNum) {
-	case 1:
-		this->absolute(1);
-		break;
-	case 2:
-		this->effectiveAddrHigh = 0;
-		this->absolute(3); // Calls lastAddressingCycle()
-		break;
-	}
+void CPU::immediate() {
+	this->effectiveAddr = this->PC++;
 }
 
-void CPU::relative(uint8_t cycleNum) {
-	assert(cycleNum == 1);
-	this->dataV = this->mem.getRAM8(this->PC);
-	this->lastAddressingCycle(this->PC++);
+void CPU::relative() {
+	this->immediate();
 }
 
-void CPU::absoluteX(uint8_t cycleNum) {
-	switch(cycleNum) {
-	case 1:
-		this->absolute(1); // Gets the low byte of the effective address
-		break;
-	case 2:
-		this->absolute(2); // Gets the high byte of the effective address
-		break;
-	case 3:
-		this->effectiveAddr = (this->effectiveAddrLow | (this->effectiveAddrHigh << 8)) + this->X;
-		if(this->effectiveAddrHigh != (this->effectiveAddr >> 8)) { // Page boundary crossed
-			this->dataV = this->mem.getRAM8(this->effectiveAddr - 0x100);
-		} else this->dataV = this->mem.getRAM8(this->effectiveAddr);
-		break;
-	case 4:
-		this->lastAddressingCycle(this->effectiveAddr); // Page already incremened
-		break;
-	}
+void CPU::absolute() {
+	this->effectiveAddr = this->readWord();
 }
 
-void CPU::absoluteXR(uint8_t cycleNum) {
-	switch(cycleNum) {
-	case 1:
-		this->absolute(1); // Gets the low byte of the effective address
-		break;
-	case 2:
-		this->absolute(2); // Gets the high byte of the effective address
-		break;
-	case 3:
-		this->effectiveAddr = (this->effectiveAddrLow | (this->effectiveAddrHigh << 8)) + this->X;
-		if(this->effectiveAddrHigh == (this->effectiveAddr >> 8)) { // Page boundary not crossed
-			this->lastAddressingCycle(this->effectiveAddr);
-		} else this->dataV = this->mem.getRAM8(this->effectiveAddr - 0x100);
-		break;
-	case 4:
-		this->lastAddressingCycle(this->effectiveAddr); // Page already incremened
-		break;
-	}
+void CPU::absoluteI(uint8_t& I) {
+	uint16_t baseAddr = this->readWord();
+	bool pageCrossed = this->pageCrossed(baseAddr, I);
+	this->getMem((baseAddr + I) - (pageCrossed ? 0x100 : 0));
+	this->effectiveAddr = baseAddr + I;
 }
 
-void CPU::absoluteY(uint8_t cycleNum) {
-	switch(cycleNum) {
-	case 1:
-		this->absolute(1); // Gets the low byte of the effective address
-		break;
-	case 2:
-		this->absolute(2); // Gets the high byte of the effective address
-		break;
-	case 3:
-		this->effectiveAddr = (this->effectiveAddrLow | (this->effectiveAddrHigh << 8)) + this->Y;
-		if(this->effectiveAddrHigh != (this->effectiveAddr >> 8)) { // Page boundary crossed
-			this->dataV = this->mem.getRAM8(this->effectiveAddr - 0x100);
-		} else this->dataV = this->mem.getRAM8(this->effectiveAddr);
-		break;
-	case 4:
-		this->lastAddressingCycle(this->effectiveAddr); // Page already incremened
-		break;
-	}
+void CPU::absoluteIR(uint8_t& I) {
+	uint16_t baseAddr = this->readWord();
+	if(this->pageCrossed(baseAddr, I)) this->getMem((baseAddr + I) - 0x100);
+	this->effectiveAddr = baseAddr + I;
 }
 
-void CPU::absoluteYR(uint8_t cycleNum) {
-	switch(cycleNum) {
-	case 1:
-		this->absolute(1); // Gets the low byte of the effective address
-		break;
-	case 2:
-		this->absolute(2); // Gets the high byte of the effective address
-		break;
-	case 3:
-		this->effectiveAddr = (this->effectiveAddrLow | (this->effectiveAddrHigh << 8)) + this->Y;
-		if(this->effectiveAddrHigh == (this->effectiveAddr >> 8)) { // Page boundary not crossed
-			this->lastAddressingCycle(this->effectiveAddr);
-		} else this->dataV = this->mem.getRAM8(this->effectiveAddr - 0x100);
-		break;
-	case 4:
-		this->lastAddressingCycle(this->effectiveAddr); // Page already incremened
-		break;
-	}
+void CPU::zeroPage() {
+	this->effectiveAddr = this->readByte();
 }
 
-void CPU::zeroPageX(uint8_t cycleNum) {
-	switch(cycleNum) {
-	case 1:
-		this->zeroPage(1);
-		break;
-	case 2:
-		this->effectiveAddr = this->effectiveAddrLow;
-		break;
-	case 3:
-		this->effectiveAddr = (this->effectiveAddr + this->X) & 0xff;
-		this->lastAddressingCycle(this->effectiveAddr);
-		break;
-	}
+void CPU::zeroPageI(uint8_t& I) {
+	uint16_t addr = this->readByte();
+	this->getMem(addr);
+	this->effectiveAddr = (addr + I) & 0xFF;
 }
 
-void CPU::zeroPageY(uint8_t cycleNum) {
-	switch(cycleNum) {
-	case 1:
-		this->zeroPage(1);
-		break;
-	case 2:
-		this->effectiveAddr = this->effectiveAddrLow;
-		break;
-	case 3:
-		this->effectiveAddr = (this->effectiveAddr + this->Y) & 0xff;
-		this->lastAddressingCycle(this->effectiveAddr);
-		break;
-	}
+void CPU::indirectX() {
+	uint16_t baseAddr = this->readByte();
+	this->getMem(baseAddr);
+	baseAddr = (baseAddr + this->X) & 0xFF;
+	
+	if(baseAddr == 0xFF) this->effectiveAddr = this->getMem(0xFF) | (this->getMem(0x00) << 8);
+	else this->effectiveAddr = this->readWord(baseAddr);
 }
 
-void CPU::indirectX(uint8_t cycleNum) {
-	switch(cycleNum) {
-	case 1:
-		this->absolute(1); // Gets the low byte of the base address
-		break;
-	case 2:
-		this->effectiveAddr = this->effectiveAddrLow; // Acts as the base address
-		break;
-	case 3:
-		this->effectiveAddr = (this->effectiveAddr + this->X) & 0xff; // Acts as the base address
-		this->effectiveAddrLow = mem.getRAM8(this->effectiveAddr); // Uses the base address
-		break;
-	case 4:
-		this->effectiveAddrHigh = mem.getRAM8((this->effectiveAddr + 1) & 0xff); // Uses the base address
-		break;
-	case 5:
-		this->lastAddressingCycle(this->effectiveAddrLow | (this->effectiveAddrHigh << 8));
-		break;
-	}
+void CPU::indirectY() {
+	uint16_t baseAddr = this->readByte();
+	
+	uint16_t effectiveAddr;
+	if(baseAddr == 0xFF) effectiveAddr = this->getMem(0xFF) | (this->getMem(0x00) << 8);
+	else effectiveAddr = this->readWord(baseAddr);
+
+	bool pageCrossed = this->pageCrossed(effectiveAddr, this->Y);
+	this->getMem(effectiveAddr + this->Y - (pageCrossed ? 0x100 : 0));
+	this->effectiveAddr = effectiveAddr + this->Y;
 }
 
-void CPU::indirectY(uint8_t cycleNum) {
-	switch(cycleNum) {
-	case 1:
-		this->absolute(1); // Gets the low byte of the indirect address
-		break;
-	case 2:
-		this->effectiveAddr = this->effectiveAddrLow; // Acts as the indirect address
-		this->effectiveAddrLow = mem.getRAM8(this->effectiveAddr); // Gets the low byte of the base address
-		break;
-	case 3: // Gets the high byte of the base address
-		this->effectiveAddrHigh = mem.getRAM8((this->effectiveAddr + 1) & 0xff);
-		break;
-	case 4:
-		this->absoluteY(3); // Uses the base address to form an effective address
-		break;
-	case 5:
-		this->absoluteY(4);
-		break;
-	}
-}
+void CPU::indirectYR() {
+	uint16_t baseAddr = this->readByte();
 
-void CPU::indirectYR(uint8_t cycleNum) {
-	switch(cycleNum) {
-	case 1:
-		this->absolute(1); // Gets the low byte of the indirect address
-		break;
-	case 2:
-		this->effectiveAddr = this->effectiveAddrLow; // Acts as the indirect address
-		this->effectiveAddrLow = mem.getRAM8(this->effectiveAddr); // Gets the low byte of the base address
-		break;
-	case 3: // Gets the high byte of the base address
-		this->effectiveAddrHigh = mem.getRAM8((this->effectiveAddr + 1) & 0xff);
-		break;
-	case 4:
-		this->absoluteYR(3); // Uses the base address to form an effective address
-		break;
-	case 5:
-		this->absoluteYR(4); // An extra cycle if a page boundary was crossed
-		break;
-	}
+	uint16_t effectiveAddr;
+	if(baseAddr == 0xFF) effectiveAddr = this->getMem(0xFF) | (this->getMem(0x00) << 8);
+	else effectiveAddr = this->readWord(baseAddr);
+
+	if(this->pageCrossed(effectiveAddr, this->Y)) this->getMem(effectiveAddr + this->Y - 0x100);
+	this->effectiveAddr = effectiveAddr + this->Y;
 }
 
 
 // Flag Control
 void CPU::flagN(uint8_t result) {
-	this->P.N() = result >> 7;
+	this->P.N() = result & 0x80;
 }
 
 void CPU::flagZ(uint8_t result) {
@@ -292,27 +148,22 @@ void CPU::flagZ(uint8_t result) {
 }
 
 void CPU::flagC(uint16_t result) {
-	this->P.C() = (result >> 8) & 0x1; // Gets ninth bit
-}
-
-
-void CPU::flagV(uint8_t result) { // Checks if the sign of the result differs from the signs of operands
-	this->P.V() = ((this->A ^ result) & (mem.getRAM8(this->effectiveAddr) ^ result)) >> 7;
+	this->P.C() = result & 0x100; // Checks ninth bit
 }
 
 
 // Stack Operations
 void CPU::stackPush(uint8_t data) {
-	mem.setRAM8(this->S-- | (0x01 << 8), data);
+	this->setMem(this->S-- | (0x01 << 8), data);
 }
 
 uint8_t CPU::stackPull() {
-	return mem.getRAM8(++this->S | (0x01 << 8));
+	return this->getMem(++this->S | (0x01 << 8));
 }
 
 
-// Operations - Ends on the first cycle of the next instruction
-void CPU::lastOperationCycle() {
+// Operations
+/*void CPU::lastOperationCycle() {
 	if(this->doingIllegalOpcode) return;
 	this->cycleNum = 0;
 	this->gotData = false;
@@ -325,86 +176,55 @@ void CPU::lastOperationCycle() {
 		this->mem.mapper->IRQCalled = false;
 	}
 	this->mem.NMICalled = false;
+}*/
+
+void CPU::interrupt(uint16_t vectorLocation, bool isBRK) {
+	uint8_t flags;
+	if(isBRK) {
+		this->PC++; // Read without increment during dummyRead of implied
+		flags = this->P.getByte() | 0x10; // Sets B Flag
+	} else {
+		this->getMem(this->PC); // Garbage Opcode fetch
+		this->getMem(this->PC); // Garbage Next Instruction Read 
+		flags = this->P.getByte();
+	}
+
+	this->stackPush(this->PC);
+	this->stackPush(flags);
+	this->P.I() = true;
+	this->PC = this->readWord(vectorLocation);
 }
 
-void CPU::interrupt(uint16_t vectorLocation) {
-	switch(cycleNum - this->addressingCyclesUsed) {
-	case 0:
-		this->mem.getRAM8(this->PC);
-		if(!this->mem.inNMI && !this->mem.inIRQ) this->PC++;
-		break;
-	case 1:
-		this->stackPush(this->PC >> 8);
-		break;
-	case 2:
-		this->stackPush(this->PC & 0xff);
-		break;
-	case 3:
-		// Bit 4 is only set if interrupt caused by BRK
-		this->stackPush((this->P.byte.to_ulong() & 0xff) | ((!this->mem.inNMI && !this->mem.inIRQ) << 4)); 
-		break;
-	case 4:
-		this->P.I() = 1;
-		this->effectiveAddrLow = mem.getRAM8(vectorLocation); // Low byte of interrupt vector
-		break;
-	case 5:
-		this->effectiveAddrHigh = mem.getRAM8(vectorLocation + 1); // High byte of interrupt vector
-		this->PC = this->effectiveAddrLow | (this->effectiveAddrHigh << 8);
-		this->lastOperationCycle();
-		this->mem.inIRQ = false;
-		break;
-	}
-}
-
-void CPU::RMW(uint8_t result) {
-	switch(this->cycleNum - this->addressingCyclesUsed) {
-	case 0:
-		mem.setRAM8(this->effectiveAddr, this->dataV); // Changes value of data if it changed between cycles?
-		break;
-	case 1:
-		mem.setRAM8(this->effectiveAddr, result);
-		this->flagN(result);
-		this->flagZ(result);
-		break;
-	case 2:
-		this->lastOperationCycle();
-		break;
-	}
+uint8_t CPU::RMW(uint8_t(CPU::*operation)(uint8_t val)) {
+	this->readOperand();
+	this->setMem(this->effectiveAddr, this->operand);
+	uint8_t result = (this->*operation)(this->operand);
+	this->flagN(result);
+	this->flagZ(result);
+	this->setMem(this->effectiveAddr, result);
+	return result;
 }
 
 void CPU::branchOp(bool branchResult) {
-	uint16_t currentPage;
-	switch(cycleNum - this->addressingCyclesUsed) {
-	case 0:
-		if(!branchResult) this->lastOperationCycle();
-		break;
-	case 1:
-		currentPage = this->PC >> 8;
-		this->PC += static_cast<int8_t>(this->dataV);
-		// Page Boundary not crossed
-		if(currentPage == (this->PC >> 8)) this->lastOperationCycle();
-		else this->mem.getRAM8(((this->PC & ~(0xFF << 8)) | (currentPage << 8)));
-		break;
-	case 2:
-		// Increment page boundary, but do nothing as it has already been incremented
-		this->lastOperationCycle();
-		break;
+	int8_t offset = this->readOperand();
+	if(!branchResult) return;
+	this->dummyRead();
+	if(this->pageCrossed(this->PC, offset)) {
+		uint16_t currentPage = this->PC & 0xFF00;
+		this->getMem(((this->PC + offset) & ~0xFF00) | currentPage);
 	}
+	this->PC += offset;
 }
 
-void CPU::ADC() { // Change SBC if changing ADC
-	uint16_t result = this->A + mem.getRAM8(this->effectiveAddr) + this->P.C();
-	this->flagN(result & 0xff);
-	this->flagZ(result & 0xff);
+void CPU::ADD(uint8_t val) {
+	uint16_t result = this->A + val + this->P.C();
 	this->flagC(result);
-	this->flagV(result & 0xff);
-	this->A = result & 0xff;
-	this->lastOperationCycle();
+	this->P.V() = (~(this->A ^ val) & (this->A ^ result)) & 0x80;
+	this->setA((uint8_t)result);
 }
 
 void CPU::AHX() { // Undocumented
-	mem.setRAM8(this->effectiveAddr, this->A & this->X & (((this->effectiveAddr >> 8) & 0xff) + 1));
-	this->lastOperationCycle();
+	this->setMem(this->effectiveAddr, this->A & this->X & ((this->effectiveAddr >> 8) + 1));
 }
 
 void CPU::ALR() { // Undocumented
@@ -418,41 +238,32 @@ void CPU::ANC() { // Undocumented
 }
 
 void CPU::AND() {
-	this->A = this->A & mem.getRAM8(this->effectiveAddr);
-	this->flagN(this->A);
-	this->flagZ(this->A);
-	this->lastOperationCycle();
+	this->setA(this->A & this->readOperand());
 }
 
 void CPU::ARR() { // Undocumented
 	this->AND();
 	this->ROR_A();
-	this->P.C() = (this->A >> 6) & 0x1;
-	this->P.V() = ((this->A >> 6) ^ (this->A >> 5)) & 0x1;
-}
-
-void CPU::ASL() {
-	if(this->cycleNum - this->addressingCyclesUsed == 1) this->P.C() = this->dataV >> 7;
-	this->RMW(this->dataV << 1);
+	this->P.C() = this->A & 0x40;
+	this->P.V() = ((this->A >> 6) ^ (this->A >> 5)) & 0x01;
 }
 
 void CPU::ASL_A() {
-	uint8_t result = this->A << 1;
-	this->P.C() = this->A >> 7;
-	this->A = result;
-	this->flagN(result);
-	this->flagZ(result);
-	this->lastOperationCycle();
+	uint8_t result = this->ASL(this->A);
+	this->P.C() = this->A & 0x80;
+	this->setA(result);
+}
+
+void CPU::ASL_M() {
+	this->RMW(&CPU::ASL);
+	this->P.C() = this->operand & 0x80; // Operand is before operation
 }
 
 void CPU::AXS() { // Undocumented
-	uint16_t result = (this->A & this->X) - mem.getRAM8(this->effectiveAddr);
-	this->X = result & 0xff;
-	this->flagN(this->X);
-	this->flagZ(this->X);
+	uint16_t result = (this->A & this->X) - this->readOperand();
+	this->setX((uint8_t)result);
 	this->flagC(result);
 	this->P.C() = !this->P.C();
-	this->lastOperationCycle();
 }
 
 void CPU::BCC() {
@@ -468,12 +279,11 @@ void CPU::BEQ() {
 }
 
 void CPU::BIT() {
-	uint8_t operand = mem.getRAM8(this->effectiveAddr);
-	uint8_t result = this->A & operand;
+	this->readOperand();
+	uint8_t result = this->A & this->operand;
 	this->flagZ(result);
-	this->P.N() = operand >> 7;
-	this->P.V() = (operand >> 6) & 0x1;
-	this->lastOperationCycle();
+	this->flagN(this->operand);
+	this->P.V() = (this->operand >> 6) & 0x01;
 }
 
 void CPU::BMI() {
@@ -489,7 +299,7 @@ void CPU::BPL() {
 }
 
 void CPU::BRK() {
-	this->interrupt(0xFFFE);
+	this->interrupt(0xFFFE, true);
 }
 
 void CPU::BVC() {
@@ -502,83 +312,48 @@ void CPU::BVS() {
 
 void CPU::CLC() {
 	this->P.C() = 0;
-	this->lastOperationCycle();
 }
 
 void CPU::CLD() {
 	this->P.D() = 0;
-	this->lastOperationCycle();
 }
 
 void CPU::CLI() {
 	this->P.I() = 0;
 	this->mem.inIRQ = false;
-	this->lastOperationCycle();
 }
 
 void CPU::CLV() {
 	this->P.V() = 0;
-	this->lastOperationCycle();
 }
 
-void CPU::CMP() {
-	uint16_t result = this->A - mem.getRAM8(this->effectiveAddr);
-	this->flagN(result & 0xff);
-	this->flagZ(result & 0xff);
+void CPU::CMP(uint8_t reg, uint8_t val) {
+	uint16_t result = reg - val;
+	this->flagN((uint8_t)result);
+	this->flagZ((uint8_t)result);
 	this->flagC(result);
 	this->P.C() = !this->P.C();
-	this->lastOperationCycle();
-}
-
-void CPU::CPX() {
-	uint16_t result = this->X - mem.getRAM8(this->effectiveAddr);
-	this->flagN(result & 0xff);
-	this->flagZ(result & 0xff);
-	this->flagC(result);
-	this->P.C() = !this->P.C();
-	this->lastOperationCycle();
-}
-
-void CPU::CPY() {
-	uint16_t result = this->Y - mem.getRAM8(this->effectiveAddr);
-	this->flagN(result & 0xff);
-	this->flagZ(result & 0xff);
-	this->flagC(result);
-	this->P.C() = !this->P.C();
-	this->lastOperationCycle();
 }
 
 void CPU::DCP() { // Undocumented
 	this->DEC();
-	this->doingIllegalOpcode = true;
-	if(this->cycleNum - this->addressingCyclesUsed == 1) this->CMP();
-	this->doingIllegalOpcode = false;
-
+	this->CMP(this->A, this->operand - 1); // Operand - 1 occurs in DEC
 }
 
 void CPU::DEC() {
-	this->RMW(this->dataV - 1);
+	this->RMW(&CPU::dec);
 }
 
 void CPU::DEX() {
-	this->X--;
-	this->flagN(this->X);
-	this->flagZ(this->X);
-	this->lastOperationCycle();
+	this->setX(this->X - 1);
 }
 
 void CPU::DEY() {
-	this->Y--;
-	this->flagN(this->Y);
-	this->flagZ(this->Y);
-	this->lastOperationCycle();
+	this->setY(this->Y - 1);
 }
 
 void CPU::EOR() {
-	this->A ^= mem.getRAM8(this->effectiveAddr);
-	this->flagN(this->A);
-	this->flagZ(this->A);
-	this->lastOperationCycle();
+	this->setA(this->A ^ this->readOperand());
 }
 
 void CPU::IGN() {
@@ -586,71 +361,35 @@ void CPU::IGN() {
 }
 
 void CPU::INC() {
-	this->RMW(this->dataV + 1);
+	this->RMW(&CPU::inc);
 }
 
 void CPU::INX() {
-	this->X++;
-	this->flagN(this->X);
-	this->flagZ(this->X);
-	this->lastOperationCycle();
+	this->setX(this->X + 1);
 }
 
 void CPU::INY() {
-	this->Y++;
-	this->flagN(this->Y);
-	this->flagZ(this->Y);
-	this->lastOperationCycle();
+	this->setY(this->Y + 1);
 }
 
 void CPU::ISC() { // Undocumented
 	this->INC();
-	this->doingIllegalOpcode = true;
-	if(this->cycleNum - this->addressingCyclesUsed == 1) this->SBC();
-	this->doingIllegalOpcode = false;
+	this->ADD((this->operand + 1) ^ 0xFF); // Operand + 1 occurs in INC
 }
 
-void CPU::JMP() {
-	if(opcode == 0x4C) { // JMP with absolute addressing
-		this->PC = this->effectiveAddrLow | (this->effectiveAddrHigh << 8);
-		this->lastOperationCycle();
-	} else { // JMP with indirect addressing
-		switch(this->cycleNum - this->addressingCyclesUsed) {
-		case 0:
-			this->PC = this->effectiveAddrLow | (this->effectiveAddrHigh << 8); // Indirect Address
-			this->effectiveAddrLow = mem.getRAM8(this->PC);
-			break;
-		case 1:
-			// Make sure that page boundaries are accounted for - 0x02ff + 1 should be 0x0200
-			this->effectiveAddrHigh = mem.getRAM8((this->PC & 0xff00) | ((this->PC + 1) & 0xff));
-			break;
-		case 2:
-			this->PC = this->effectiveAddrLow | (this->effectiveAddrHigh << 8);
-			this->lastOperationCycle();
-			break;
-		}
-	}
+void CPU::JMP_Abs() {
+	this->PC = this->effectiveAddr;
 }
 
-void CPU::JSR() {
-	switch(this->cycleNum - this->addressingCyclesUsed) {
-	case 0:
-		// Doesn't do anything - Not sure?
-		break;
-	case 1:
-		this->stackPush(this->PC >> 8);
-		break;
-	case 2:
-		this->stackPush(this->PC & 0xff);
-		break;
-	case 3:
-		this->effectiveAddrHigh = mem.getRAM8(this->PC++);
-		break;
-	case 4:
-		this->PC = this->effectiveAddrLow | (this->effectiveAddrHigh << 8);
-		this->lastOperationCycle();
-		break;
-	}
+void CPU::JMP_Ind() {
+	uint16_t highAddr = (this->effectiveAddr & 0xFF00) | ((this->effectiveAddr + 1) & 0xFF);
+	this->PC = this->getMem(this->effectiveAddr) | (this->getMem(highAddr) << 8);
+}
+
+void CPU::JSR() { // Order of getting bytes is not accurate, but it shouldn't matter
+	this->dummyRead();
+	this->stackPush((uint16_t)(this->PC - 1));
+	this->PC = this->effectiveAddr;
 }
 
 void CPU::KIL() { // Undocumented
@@ -658,222 +397,141 @@ void CPU::KIL() { // Undocumented
 }
 
 void CPU::LAS() { // Undocumented
-	this->S &= mem.getRAM8(this->effectiveAddr);
+	this->S &= this->readOperand();
 	this->A = this->S;
-	this->X = this->S;
-	this->flagN(this->S);
-	this->flagZ(this->S);
-	this->lastOperationCycle();
+	this->setX(this->S);
 }
 
 void CPU::LAX() { // Undocumented
-	this->LDA();
-	this->LDX();
+	this->readOperand();
+	this->A = this->operand;
+	this->setX(this->operand);
 }
 
 void CPU::LDA() {
-	this->A = mem.getRAM8(this->effectiveAddr);
-	this->flagN(this->A);
-	this->flagZ(this->A);
-	this->lastOperationCycle();
+	this->setA(this->readOperand());
 }
 
 void CPU::LDX() {
-	this->X = mem.getRAM8(this->effectiveAddr);
-	this->flagN(this->X);
-	this->flagZ(this->X);
-	this->lastOperationCycle();
+	this->setX(this->readOperand());
 }
 
 void CPU::LDY() {
-	this->Y = mem.getRAM8(this->effectiveAddr);
-	this->flagN(this->Y);
-	this->flagZ(this->Y);
-	this->lastOperationCycle();
-}
-
-void CPU::LSR() {
-	if(this->cycleNum - this->addressingCyclesUsed == 1) this->P.C() = this->dataV & 0x1;
-	this->RMW(this->dataV >> 1);
+	this->setY(this->readOperand());
 }
 
 void CPU::LSR_A() {
-	uint8_t result = this->A >> 1;
-	this->P.C() = this->A & 0x1;
-	this->A = result;
-	this->flagN(result);
-	this->flagZ(result);
-	this->lastOperationCycle();
+	uint8_t result = this->LSR(this->A);
+	this->P.C() = this->A & 0x01;
+	this->setA(result);
+}
+
+void CPU::LSR_M() {
+	this->RMW(&CPU::LSR);
+	this->P.C() = this->operand & 0x01; // Operand is beefore operation
 }
 
 
 void CPU::NOP() {
-	this->lastOperationCycle();
+	return;
 }
 
 void CPU::ORA() {
-	this->A |= mem.getRAM8(this->effectiveAddr);
-	this->flagN(this->A);
-	this->flagZ(this->A);
-	this->lastOperationCycle();
+	this->setA(this->A | this->readOperand());
 }
 
 void CPU::PHA() {
-	if(this->cycleNum - this->addressingCyclesUsed == 0) {
-		this->stackPush(this->A);
-	} else {
-		this->lastOperationCycle();
-	}
+	this->stackPush(this->A);
 }
 
 void CPU::PHP() {
-	if(this->cycleNum - this->addressingCyclesUsed == 0) {
-		this->stackPush((this->P.byte.to_ulong() & 0xff) | (1 << 4)); // Bit 4 is set
-	} else {
-		this->lastOperationCycle();
-	}
+	this->stackPush((uint8_t)(this->P.getByte() | 0x10)); // Bit 4 Set
 }
 
 void CPU::PLA() {
-	if(this->cycleNum - this->addressingCyclesUsed == 1) {
-		this->A = this->stackPull();
-		this->flagN(this->A);
-		this->flagZ(this->A);
-	} else if(this->cycleNum - this->addressingCyclesUsed == 2) {
-		this->lastOperationCycle();
-	}
+	this->dummyRead();
+	this->setA(this->stackPull());
 }
 
 void CPU::PLP() {
-	if(this->cycleNum - this->addressingCyclesUsed == 1) {
-		this->P.byte = (this->stackPull() & ~(1 << 4)) | (1 << 5); // Bits 4(clear) and 5(set) are ignored
-	} else if(this->cycleNum - this->addressingCyclesUsed == 2) {
-		this->lastOperationCycle();
-	}
+	this->dummyRead();
+	this->P.setByte(this->stackPull()); // Bits 4(clear) and 5(set) are ignored
 }
 
 void CPU::RLA() { // Undocumented
-	this->ROL();
-	this->doingIllegalOpcode = true;
-	if(this->cycleNum - this->addressingCyclesUsed == 1) this->AND();
-	this->doingIllegalOpcode = false;
-}
-
-void CPU::ROL() {
-	this->RMW((this->dataV << 1) | static_cast<int>(this->P.C()));
-	if(this->cycleNum - this->addressingCyclesUsed == 1) this->P.C() = this->dataV >> 7;
+	uint8_t result = this->RMW(&CPU::ROL);
+	this->P.C() = this->operand & 0x80; // Operand is before operation
+	this->setA(this->A & result);
 }
 
 void CPU::ROL_A() {
-	uint8_t result = (this->A << 1) | static_cast<int>(this->P.C());
-	this->P.C() = this->A >> 7;
-	this->A = result;
-	this->flagN(result);
-	this->flagZ(result);
-	this->lastOperationCycle();
+	uint8_t result = this->ROL(this->A);
+	this->P.C() = this->A & 0x80;
+	this->setA(result);
 }
 
-void CPU::ROR() {
-	this->RMW((this->dataV >> 1) | (this->P.C() << 7));
-	if(this->cycleNum - this->addressingCyclesUsed == 1) this->P.C() = this->dataV & 0x1;
+void CPU::ROL_M() {
+	this->RMW(&CPU::ROL);
+	this->P.C() = this->operand & 0x80; // Operand is before operation
 }
 
 void CPU::ROR_A() {
-	uint8_t result = (this->A >> 1) | (this->P.C() << 7);
-	this->P.C() = this->A & 0x1;
-	this->A = result;
-	this->flagN(result);
-	this->flagZ(result);
-	this->lastOperationCycle();
+	uint8_t result = this->ROR(this->A);
+	this->P.C() = this->A & 0x01;
+	this->setA(result);
+}
+
+void CPU::ROR_M() {
+	this->RMW(&CPU::ROR);
+	this->P.C() = this->operand & 0x01; // Operand is before operation
 }
 
 void CPU::RRA() { // Undocumented
-	this->ROR();
-	this->doingIllegalOpcode = true;
-	if(this->cycleNum - this->addressingCyclesUsed == 1) this->ADC();
-	this->doingIllegalOpcode = false;
+	uint8_t result = this->RMW(&CPU::ROR);
+	this->P.C() = this->operand & 0x01; // Operand is before operation
+	this->ADD(result);
 }
 
 void CPU::RTI() {
-	switch(this->cycleNum - this->addressingCyclesUsed) {
-	case 0:
-		this->mem.getRAM8(this->PC);
-		break;
-	case 1:
-		this->P.byte = (this->stackPull() & ~(1 << 4)) | (1 << 5); // Bits 4(clear) and 5(set) are ignored
-		break;
-	case 2:
-		this->PC = this->stackPull();
-		this->PC &= 0xff;
-		break;
-	case 3:
-		this->PC |= (this->stackPull() << 8);
-		break;
-	case 4:
-		this->lastOperationCycle();
-		break;
-	}
+	this->dummyRead(); // Wrong Address, shouldn't matter
+	this->P.setByte(this->stackPull()); // Bits 4(clear) and 5(set) are ignored
+	this->PC = this->stackPullWord();
 }
 
 void CPU::RTS() {
-	switch(this->cycleNum - this->addressingCyclesUsed) {
-	case 0:
-		this->mem.getRAM8(this->PC);
-		break;
-	case 1:
-		this->PC = this->stackPull();
-		this->PC &= 0xff;
-		break;
-	case 2:
-		this->PC |= (this->stackPull() << 8);
-		break;
-	case 3:
-		this->PC++;
-		break;
-	case 4:
-		this->lastOperationCycle();
-		break;
-	}
+	this->dummyRead(); // Wrong Address, shouldn't matter
+	this->PC = this->stackPullWord();
+	this->dummyRead();
+	this->PC++;
 }
 
 void CPU::SAX() { // Undocumented
-	mem.setRAM8(this->effectiveAddr, (this->A & this->X));
-	this->lastOperationCycle();
-}
-
-void CPU::SBC() { // ADC with flipped data
-	uint8_t& ref = *this->mem.getRAMAddrData(this->effectiveAddr).second;
-	ref = ~ref;
-	this->ADC();
-	ref = ~ref; // Flip back to original
+	this->setMem(this->effectiveAddr, (this->A & this->X));
 }
 
 void CPU::SEC() {
 	this->P.C() = 1;
-	this->lastOperationCycle();
 }
 
 void CPU::SED() {
 	this->P.D() = 1;
-	this->lastOperationCycle();
 }
 
 void CPU::SEI() {
 	this->P.I() = 1;
 	if(this->mem.mapper->IRQCalled) this->mem.inIRQ = true;
-	this->lastOperationCycle();
 }
 
 void CPU::SHX() { // Undocumented
 	uint8_t high = this->effectiveAddr >> 8;
-	mem.setRAM8(((this->X & (high + 1)) << 8) | (this->effectiveAddr & 0xff), this->X & (high + 1));
-	this->lastOperationCycle();
+	uint8_t low = this->effectiveAddr & 0xFF;
+	this->setMem(((this->X & (high + 1)) << 8) | low, this->X & (high + 1));
 }
 
 void CPU::SHY() { // Undocumented
 	uint8_t high = this->effectiveAddr >> 8;
-	mem.setRAM8( ((this->Y & (high + 1)) << 8) | (this->effectiveAddr & 0xff), this->Y & (high + 1));
-	this->lastOperationCycle();
+	uint8_t low = this->effectiveAddr & 0xFF;
+	this->setMem( ((this->Y & (high + 1)) << 8) | low, this->Y & (high + 1));
 }
 
 void CPU::SKB() { // Undocumented
@@ -881,78 +539,54 @@ void CPU::SKB() { // Undocumented
 }
 
 void CPU::SLO() { // Undocumented
-	this->ASL();
-	this->doingIllegalOpcode = true;
-	if(this->cycleNum - this->addressingCyclesUsed == 1) this->ORA();
-	this->doingIllegalOpcode = false;
+	this->ASL_M();
+	this->setA(this->A | this->ASL(this->operand));
 }
 
 void CPU::SRE() { // Undocumented
-	this->LSR();
-	this->doingIllegalOpcode = true;
-	if(this->cycleNum - this->addressingCyclesUsed == 1) this->EOR();
-	this->doingIllegalOpcode = false;
+	this->LSR_M();
+	this->setA(this->A ^ this->LSR(this->operand));
 }
 
 void CPU::STA() {
-	mem.setRAM8(this->effectiveAddr, this->A);
-	this->lastOperationCycle();
+	this->setMem(this->effectiveAddr, this->A);
 }
 
 void CPU::STX() {
-	mem.setRAM8(this->effectiveAddr, this->X);
-	this->lastOperationCycle();
+	this->setMem(this->effectiveAddr, this->X);
 }
 
 void CPU::STY() {
-	mem.setRAM8(this->effectiveAddr, this->Y);
-	this->lastOperationCycle();
+	this->setMem(this->effectiveAddr, this->Y);
 }
 
 void CPU::TAS() {
 	this->S = this->A & this->X;
-	mem.setRAM8(this->effectiveAddr, this->S & (((this->effectiveAddr >> 8) & 0xff) + 1));
-	this->lastOperationCycle();
+	this->setMem(this->effectiveAddr, this->S & ((this->effectiveAddr >> 8) + 1));
 }
 
 void CPU::TAX() {
-	this->X = this->A;
-	this->flagN(this->X);
-	this->flagZ(this->X);
-	this->lastOperationCycle();
+	this->setX(this->A);
 }
 
 void CPU::TAY() {
-	this->Y = this->A;
-	this->flagN(this->Y);
-	this->flagZ(this->Y);
-	this->lastOperationCycle();
+	this->setY(this->A);
 }
 
 void CPU::TYA() {
-	this->A = this->Y;
-	this->flagN(this->A);
-	this->flagZ(this->A);
-	this->lastOperationCycle();
+	this->setA(this->Y);
 }
 
 void CPU::TSX() {
-	this->X = this->S;
-	this->flagN(this->X);
-	this->flagZ(this->X);
-	this->lastOperationCycle();
+	this->setX(this->S);
 }
 
 void CPU::TXA() {
-	this->A = this->X;
-	this->flagN(this->A);
-	this->flagZ(this->A);
-	this->lastOperationCycle();
+	this->setA(this->X);
 }
 
 void CPU::TXS() {
 	this->S = this->X;
-	this->lastOperationCycle();
 }
 
 void CPU::XAA() {

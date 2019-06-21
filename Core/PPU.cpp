@@ -1,30 +1,23 @@
 #include "stdafx.h"
 #include "PPU.h"
 
+#include "CPU.h"
+
 
 PPU::PPU(Memory& m) : mem(m) { }
 
 void PPU::emulateAferCPU() {
-	assert(!(this->registerRead && this->registerWritten));
-	if(this->registerRead) this->handleRegisterReads();
-	else if(this->registerWritten) this->handleRegisterWrites();
-
 	// Checks if an NMI should occur
 	if((this->STATUS >> 7) & (this->CTRL >> 7)) {
-		mem.NMICalled = this->oldNMI ^ true; // Edge-sensitivity
-		if(mem.inNMI) this->oldNMI = true; // Don't change until CPU actually responds
+		if(this->NMIPinHigh) this->mem.NMICalled = true; // Edge-sensitivity
+		this->NMIPinHigh = false;
 	} else {
-		this->oldNMI = false;
-	}
-	if(mem.inDMA && mem.DMAdoneDummy && (this->mem.mapper->CPUcycleCount % 2)) {
-		uint8_t oamAddr = (this->OAMDMAStartAddr + ((mem.DMAAddr - 1) & 0xff)) % 256;
-		if(oamAddr % 4 == 2) this->mem.DMAVal &= 0xE3;
-		this->mem.OAM[oamAddr] = this->mem.DMAVal;
+		this->NMIPinHigh = true;
 	}
 }
 
-void PPU::handleRegisterReads() {
-	switch(this->registerRead) {
+void PPU::registerRead(uint16_t addr) {
+	switch(addr) {
 	case 0x2002: // STATUS
 		this->STATUS &= ~(1 << 7); // Clear VBlank Flag
 		this->onSecondWrite = false; // Reset address latch
@@ -35,15 +28,14 @@ void PPU::handleRegisterReads() {
 		} else {
 			mem.ppuDATAReadBuffer = mem.getVRAM8(this->currentVramAddr & ~0x1000);
 		}
-		this->currentVramAddr += 1 + ((this->CTRL >> 2) & 0x1) * 31;
+		this->currentVramAddr += 1 + ((this->CTRL >> 2) & 0x01) * 31;
 		this->mem.mapper->setPPUBusAddress(this->currentVramAddr, this->cycleNum);
 		break;
 	}
-	this->registerRead = 0;
 }
 
-void PPU::handleRegisterWrites() {
-	switch(this->registerWritten) {
+void PPU::registerWritten(uint16_t addr) {
+	switch(addr) {
 	case 0x2000: // CTRL
 		// t: ...BA.. ........ = d: ......BA
 		this->tempVramAddr = (this->tempVramAddr & ~0xC00) | (this->CTRL & 0x3) << 10;
@@ -81,17 +73,13 @@ void PPU::handleRegisterWrites() {
 		break;
 	case 0x2007: // DATA
 		mem.setVRAM8(this->currentVramAddr++ & 0x3FFF, this->DATA);
-		this->currentVramAddr += ((this->CTRL >> 2) & 0x1) * 31; // Ads extra 31 if bit 2 is set
+		this->currentVramAddr += ((this->CTRL >> 2) & 0x01) * 31; // Ads extra 31 if bit 2 is set
 		this->mem.mapper->setPPUBusAddress(this->currentVramAddr, this->cycleNum);
 		break;
 	case 0x4014: // OAM DMA
-		mem.DMAPage = this->OAMDMA;
-		mem.DMAAddr = this->OAMDMA << 8; // OAMDMA has the high byte
-		mem.inDMA = true;
-		this->OAMDMAStartAddr = this->OAMADDR;
+		this->mem.cpu.OAMDMA();
 		break;
 	}
-	this->registerWritten = 0;
 }
 
 void PPU::emulateDot() {
@@ -158,33 +146,33 @@ void PPU::emulateDot() {
 
 // Useful Functions
 bool PPU::isRenderingBG() {
-	return (this->MASK >> 3) & 0x1;
+	return this->MASK & 0x08;
 }
 
 bool PPU::isRenderingSprites() {
-	return (this->MASK >> 4) & 0x1;
+	return this->MASK & 0x10;
 }
 
 bool PPU::isRendering() {
-	return (this->MASK >> 3) & 0x3;
+	return this->MASK & 0x18;
 }
 
 void PPU::renderDot() {
 	this->chosenSpritePixelIndex = -1;
 	this->chosenSpritePixelColor = 0;
 	this->chosenSpritePixelIsBehindBG = 1;
-	if(this->isRenderingSprites() && (((this->MASK >> 2) & 0x1) || this->cycleNum > 8)) {
+	if(this->isRenderingSprites() && ((this->MASK & 0x04) || this->cycleNum > 8)) {
 		this->selectSpritePixel();
 	}
 	// Background Data - fineXScroll is already 15 - fineXScroll
 	uint8_t bgPaletteNum;
 	uint8_t bgColorNum;
-	if(!this->isRenderingBG() || !(((this->MASK >> 1) & 0x1) || this->cycleNum > 8)) bgPaletteNum = bgColorNum = 0;
+	if(!this->isRenderingBG() || !((this->MASK & 0x02) || this->cycleNum > 8)) bgPaletteNum = bgColorNum = 0;
 	else {
-		uint8_t lowAttrBit = (this->lowBGAttrShiftReg >> this->fineXScroll) & 0x1;
+		uint8_t lowAttrBit = (this->lowBGAttrShiftReg >> this->fineXScroll) & 0x01;
 		uint8_t highAttrBit = (this->highBGAttrShiftReg >> this->fineXScroll) & 0x1;
-		uint8_t lowBGBit = (this->lowBGShiftReg >> this->fineXScroll) & 0x1;
-		uint8_t highBGBit = (this->highBGShiftReg >> this->fineXScroll) & 0x1;
+		uint8_t lowBGBit = (this->lowBGShiftReg >> this->fineXScroll) & 0x01;
+		uint8_t highBGBit = (this->highBGShiftReg >> this->fineXScroll) & 0x01;
 		bgPaletteNum = (highAttrBit << 1) | lowAttrBit;
 		bgColorNum = (highBGBit << 1) | lowBGBit;
 	}
@@ -213,7 +201,7 @@ void PPU::renderDot() {
 
 void PPU::setDot(uint8_t color) {
 	// TODO: Add emphasis based on PPU MASK
-	if(this->MASK & 0x1) color &= 0x30;
+	if(this->MASK & 0x01) color &= 0x30;
 	Color rgbColor = this->paletteTable[color];
 
 	int index = ((Window::height - 1 - this->scanlineNum) * Window::width) + this->cycleNum - 1;
@@ -231,7 +219,7 @@ void PPU::fetchBGData() {
 			this->lowBGShiftReg |= this->lowTileByte;
 
 			this->highBGAttrShiftReg |= (this->paletteNum >> 1) * 0xFF;
-			this->lowBGAttrShiftReg |= (this->paletteNum & 0x1) * 0xFF;
+			this->lowBGAttrShiftReg |= (this->paletteNum & 0x01) * 0xFF;
 		}
 		break;
 	case 2: // NT Byte
@@ -256,7 +244,6 @@ void PPU::fetchBGData() {
 }
 
 void PPU::evaluateSprites() { // Sprite Evaluation
-	assert(((this->MASK >> 3) & 0x1) == 1 || ((this->MASK >> 4) & 0x1) == 1);
 	if(this->spritesFound < 8 && !this->spriteEvaluationDone) {
 		if(this->cycleNum % 2 == 1) this->secondaryOAMBuffer = this->mem.OAM[this->OAMADDR];
 		else {
@@ -281,14 +268,14 @@ void PPU::fetchSpriteData() { // Sprite Fetches
 	this->OAMADDR = 0;
 	int spriteNum = (this->cycleNum - 1) / 8 - 32;
 	// if(spriteNum >= this->prevSpritesFound) return;
-	bool is8x16 = (this->CTRL >> 5) & 0x1;
+	bool is8x16 = this->CTRL & 0x20;
 	// isVerticallyFlipped is used before spriteAttrs is set, so get data from Secondary OAM
-	bool isVerticallyFlipped = (this->secondaryOAM[spriteNum * 4 + 2] >> 7) & 0x1;
+	bool isVerticallyFlipped = this->secondaryOAM[spriteNum * 4 + 2] & 0x80;
 	uint8_t fineY = (this->scanlineNum - this->spriteY) & ~0x8;
 	if(isVerticallyFlipped) fineY = ~fineY & 0x7;
 	uint16_t spritePage;
 	// Use value from Secondary OAM instead of tileNum as bit 0 changes for top and bottom half
-	if(is8x16) spritePage = (this->secondaryOAM[spriteNum * 4 + 1] & 0x1) << 12;
+	if(is8x16) spritePage = (this->secondaryOAM[spriteNum * 4 + 1] & 0x01) << 12;
 	else spritePage = (this->CTRL << 9) & 0x1000;
 
 	switch(this->cycleNum % 8) {
@@ -301,7 +288,7 @@ void PPU::fetchSpriteData() { // Sprite Fetches
 			if((this->scanlineNum - this->spriteY < 8) != isVerticallyFlipped)
 				this->tileNum = this->secondaryOAM[spriteNum * 4 + 1] & 0xFE;
 			else // Bottom Half
-				this->tileNum = this->secondaryOAM[spriteNum * 4 + 1] | 0x1;
+				this->tileNum = this->secondaryOAM[spriteNum * 4 + 1] | 0x01;
 		} else this->tileNum = this->secondaryOAM[spriteNum * 4 + 1];
 		break;
 	case 3: // Sprite Attribute
@@ -312,13 +299,13 @@ void PPU::fetchSpriteData() { // Sprite Fetches
 		break;
 	case 6: // Low Sprite Tile Byte
 		this->lowTileByte = mem.getCHRLoc(spritePage | (this->tileNum << 4) | fineY);
-		if(((this->spriteAttrs[spriteNum] >> 6) & 0x1) == 1) 
+		if(this->spriteAttrs[spriteNum] & 0x40) 
 			this->lowTileByte = this->BitReverseTable[this->lowTileByte];
 		this->lowSpriteShiftRegs[spriteNum] = this->lowTileByte;
 		break;
 	case 0: // Hgih Sprite Tile Byte
 		this->highTileByte = mem.getCHRLoc(spritePage | (this->tileNum << 4) | 0x8 | fineY);
-		if(((this->spriteAttrs[spriteNum] >> 6) & 0x1) == 1)
+		if(this->spriteAttrs[spriteNum] & 0x40)
 			this->highTileByte = this->BitReverseTable[this->highTileByte];
 		this->highSpriteShiftRegs[spriteNum] = this->highTileByte;
 		break;
@@ -331,13 +318,13 @@ void PPU::selectSpritePixel() {
 			uint8_t low = this->lowSpriteShiftRegs[i] << (this->cycleNum - 1 - this->spriteXs[i]);
 			uint8_t high = this->highSpriteShiftRegs[i] << (this->cycleNum - 1 - this->spriteXs[i]);
 
-			uint8_t lowSpriteBit = (low >> 7) & 0x1;
-			uint8_t highSpriteBit = (high >> 6) & 0x2;
+			uint8_t lowSpriteBit = (low >> 7) & 0x01;
+			uint8_t highSpriteBit = (high >> 6) & 0x02;
 			uint8_t color = highSpriteBit | lowSpriteBit;
 			if(color != 0) {
 				this->chosenSpritePixelIndex = i;
 				this->chosenSpritePixelColor = color;
-				this->chosenSpritePixelIsBehindBG = (this->spriteAttrs[i] >> 5) & 0x1;
+				this->chosenSpritePixelIsBehindBG = (this->spriteAttrs[i] >> 5) & 0x01;
 				break;
 			}
 			/*int priority = (this->spriteAttrs[i] >> 5) & 0x1;

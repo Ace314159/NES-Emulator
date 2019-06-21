@@ -63,7 +63,7 @@ void Pulse::halfFrame() {
 // Useful Functions
 uint16_t Pulse::getTargetPeriod() {
 	uint16_t targetPeriodChange = this->timer() >> (this->sweep & 0x7);
-	if((this->sweep >> 3) & 0x1) targetPeriodChange = ~targetPeriodChange + this->is2;
+	if(this->sweep & 0x08) targetPeriodChange = ~targetPeriodChange + this->is2;
 	return this->timer() + targetPeriodChange;
 }
 

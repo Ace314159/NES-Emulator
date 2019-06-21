@@ -27,18 +27,18 @@ void iNESHeader::init(std::array<uint8_t, 16>& headerData) {
 	this->NES = nullptr;
 	this->z = nullptr;
 
-	bool fourScreenVRAM = (this->flag6 >> 3) & 0x1;
-	bool isVerticalMirroring = this->flag6 & 0x1;
+	bool fourScreenVRAM = this->flag6 & 0x08;
+	bool isVerticalMirroring = this->flag6 & 0x01;
 	if(fourScreenVRAM) this->nametableMirroringType = 4;
 	else if(isVerticalMirroring) this->nametableMirroringType = 1;
 	else this->nametableMirroringType = 0;
 
-	this->containsSRAM = (this->flag6 >> 1) & 0x1;
-	this->containsTrainer = (this->flag6 >> 2) & 0x1;
-	this->mapperID = (this->flag7 & ~0xF) | (this->flag6 >> 4);
+	this->containsSRAM = this->flag6 & 0x02;
+	this->containsTrainer = this->flag6 & 0x04;
+	this->mapperID = (this->flag7 & ~0x0F) | (this->flag6 >> 4);
 	this->isVS = this->flag7 & 0x1;
-	this->isPC10 = (this->flag7 >> 1) & 0x1;
-	this->isNES2 = ((this->flag7 >> 2) & 0x3) == 2;
+	this->isPC10 = this->flag7 & 0x2;
+	this->isNES2 = this->flag7 & 0xC;
 
 #ifdef _DEBUG
 	if(this->isNES2) cout << "Is NES 2.0 ROM";

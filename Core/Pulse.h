@@ -17,9 +17,9 @@ public:
 	// Get Registers Values
 	// DLCV
 	uint8_t dutyCycle() { return DLCV >> 6; };
-	bool lengthCounterHalt() { return (this->DLCV >> 5) & 0x1; };
+	bool lengthCounterHalt() { return this->DLCV & 0x20; };
 	bool envelopeLoop() { return this->lengthCounterHalt(); };
-	bool constantVolume() override { return (this->DLCV >> 4) & 0x1; };
+	bool constantVolume() override { return this->DLCV & 0x10; };
 	uint8_t volume() override { return this->DLCV & 0xF; };
 	// Others are from Channel
 	// Sweep

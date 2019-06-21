@@ -3,11 +3,7 @@
 
 
 // Get Appropriate Addressing Mode or Operation
-void CPU::unknownOpcode() {
-	throw std::runtime_error("Unknown Opcode!");
-}
-
-void(CPU::*CPU::addressingModes[256])(uint8_t cycleNum) = {
+void(CPU::*CPU::addressingModes[256])() = {
 //  0                1                 2                3                 4                5                6                7                8              9                 A              B                 C                 D                 E                 F
 	&CPU::implied,   &CPU::indirectX,  &CPU::implied,   &CPU::indirectX,  &CPU::zeroPage,  &CPU::zeroPage,  &CPU::zeroPage,  &CPU::zeroPage,  &CPU::implied, &CPU::immediate,  &CPU::implied, &CPU::immediate,  &CPU::absolute,   &CPU::absolute,   &CPU::absolute,   &CPU::absolute,  // 0
 	&CPU::relative,  &CPU::indirectYR, &CPU::implied,   &CPU::indirectY,  &CPU::zeroPageX, &CPU::zeroPageX, &CPU::zeroPageX, &CPU::zeroPageX, &CPU::implied, &CPU::absoluteYR, &CPU::implied, &CPU::absoluteY,  &CPU::absoluteXR, &CPU::absoluteXR, &CPU::absoluteX,  &CPU::absoluteX, // 1
@@ -28,42 +24,21 @@ void(CPU::*CPU::addressingModes[256])(uint8_t cycleNum) = {
 };
 
 void(CPU::*CPU::operations[256])() = {
-//  0          1          2          3          4          5          6          7          8         9           A            B          C          D          E          F
-	&CPU::BRK, &CPU::ORA, &CPU::KIL, &CPU::SLO, &CPU::SKB, &CPU::ORA, &CPU::ASL, &CPU::SLO, &CPU::PHP, &CPU::ORA, &CPU::ASL_A, &CPU::ANC, &CPU::IGN, &CPU::ORA, &CPU::ASL, &CPU::SLO, // 0
-	&CPU::BPL, &CPU::ORA, &CPU::KIL, &CPU::SLO, &CPU::SKB, &CPU::ORA, &CPU::ASL, &CPU::SLO, &CPU::CLC, &CPU::ORA, &CPU::NOP,   &CPU::SLO, &CPU::IGN, &CPU::ORA, &CPU::ASL, &CPU::SLO, // 1
-	&CPU::JSR, &CPU::AND, &CPU::KIL, &CPU::RLA, &CPU::BIT, &CPU::AND, &CPU::ROL, &CPU::RLA, &CPU::PLP, &CPU::AND, &CPU::ROL_A, &CPU::ANC, &CPU::BIT, &CPU::AND, &CPU::ROL, &CPU::RLA, // 2
-	&CPU::BMI, &CPU::AND, &CPU::KIL, &CPU::RLA, &CPU::SKB, &CPU::AND, &CPU::ROL, &CPU::RLA, &CPU::SEC, &CPU::AND, &CPU::NOP,   &CPU::RLA, &CPU::IGN, &CPU::AND, &CPU::ROL, &CPU::RLA, // 3
-	&CPU::RTI, &CPU::EOR, &CPU::KIL, &CPU::SRE, &CPU::SKB, &CPU::EOR, &CPU::LSR, &CPU::SRE, &CPU::PHA, &CPU::EOR, &CPU::LSR_A, &CPU::ALR, &CPU::JMP, &CPU::EOR, &CPU::LSR, &CPU::SRE, // 4
-	&CPU::BVC, &CPU::EOR, &CPU::KIL, &CPU::SRE, &CPU::SKB, &CPU::EOR, &CPU::LSR, &CPU::SRE, &CPU::CLI, &CPU::EOR, &CPU::NOP,   &CPU::SRE, &CPU::IGN, &CPU::EOR, &CPU::LSR, &CPU::SRE, // 5
-	&CPU::RTS, &CPU::ADC, &CPU::KIL, &CPU::RRA, &CPU::SKB, &CPU::ADC, &CPU::ROR, &CPU::RRA, &CPU::PLA, &CPU::ADC, &CPU::ROR_A, &CPU::ARR, &CPU::JMP, &CPU::ADC, &CPU::ROR, &CPU::RRA, // 6
-	&CPU::BVS, &CPU::ADC, &CPU::KIL, &CPU::RRA, &CPU::SKB, &CPU::ADC, &CPU::ROR, &CPU::RRA, &CPU::SEI, &CPU::ADC, &CPU::NOP,   &CPU::RRA, &CPU::IGN, &CPU::ADC, &CPU::ROR, &CPU::RRA, // 7
-	&CPU::SKB, &CPU::STA, &CPU::SKB, &CPU::SAX, &CPU::STY, &CPU::STA, &CPU::STX, &CPU::SAX, &CPU::DEY, &CPU::SKB, &CPU::TXA,   &CPU::XAA, &CPU::STY, &CPU::STA, &CPU::STX, &CPU::SAX, // 8
-	&CPU::BCC, &CPU::STA, &CPU::KIL, &CPU::AHX, &CPU::STY, &CPU::STA, &CPU::STX, &CPU::SAX, &CPU::TYA, &CPU::STA, &CPU::TXS,   &CPU::TAS, &CPU::SHY, &CPU::STA, &CPU::SHX, &CPU::AHX, // 9
-	&CPU::LDY, &CPU::LDA, &CPU::LDX, &CPU::LAX, &CPU::LDY, &CPU::LDA, &CPU::LDX, &CPU::LAX, &CPU::TAY, &CPU::LDA, &CPU::TAX,   &CPU::LAX, &CPU::LDY, &CPU::LDA, &CPU::LDX, &CPU::LAX, // A
-	&CPU::BCS, &CPU::LDA, &CPU::KIL, &CPU::LAX, &CPU::LDY, &CPU::LDA, &CPU::LDX, &CPU::LAX, &CPU::CLV, &CPU::LDA, &CPU::TSX,   &CPU::LAS, &CPU::LDY, &CPU::LDA, &CPU::LDX, &CPU::LAX, // B
-	&CPU::CPY, &CPU::CMP, &CPU::SKB, &CPU::DCP, &CPU::CPY, &CPU::CMP, &CPU::DEC, &CPU::DCP, &CPU::INY, &CPU::CMP, &CPU::DEX,   &CPU::AXS, &CPU::CPY, &CPU::CMP, &CPU::DEC, &CPU::DCP, // C
-	&CPU::BNE, &CPU::CMP, &CPU::KIL, &CPU::DCP, &CPU::SKB, &CPU::CMP, &CPU::DEC, &CPU::DCP, &CPU::CLD, &CPU::CMP, &CPU::NOP,   &CPU::DCP, &CPU::IGN, &CPU::CMP, &CPU::DEC, &CPU::DCP, // D
-	&CPU::CPX, &CPU::SBC, &CPU::SKB, &CPU::ISC, &CPU::CPX, &CPU::SBC, &CPU::INC, &CPU::ISC, &CPU::INX, &CPU::SBC, &CPU::NOP,   &CPU::SBC, &CPU::CPX, &CPU::SBC, &CPU::INC, &CPU::ISC, // E
-	&CPU::BEQ, &CPU::SBC, &CPU::KIL, &CPU::ISC, &CPU::SKB, &CPU::SBC, &CPU::INC, &CPU::ISC, &CPU::SED, &CPU::SBC, &CPU::NOP,   &CPU::ISC, &CPU::IGN, &CPU::SBC, &CPU::INC, &CPU::ISC  // F
-};
-
-// Get Type of Opcode
-CPU::OpcodeType CPU::opcodeTypes[256] = {
-//  0                       1                       2                       3                       4                       5                       6                       7                       8                       9                       A                       B                       C                       D                       E                       F
-	CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::RMW,   CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::RMW, // 0
-	CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::RMW,   CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::RMW, // 1
-	CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::RMW,   CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::RMW, // 2
-	CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::RMW,   CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::RMW, // 3
-	CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::RMW,   CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::RMW, // 4
-	CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::RMW,   CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::RMW, // 5
-	CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::RMW,   CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::RMW, // 6
-	CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::RMW,   CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::RMW, // 7
-	CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, // 8
-	CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, // 9
-	CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, // A
-	CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, // B
-	CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::RMW,   CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::RMW, // C
-	CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::RMW,   CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::RMW, // D
-	CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::RMW,   CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::RMW, // E
-	CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::RMW,   CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::OTHER, CPU::OpcodeType::OTHER, CPU::OpcodeType::RMW,   CPU::OpcodeType::RMW  // F
+//  0          1          2          3          4          5          6            7          8         9           A            B          C              D          E            F
+	&CPU::BRK, &CPU::ORA, &CPU::KIL, &CPU::SLO, &CPU::SKB, &CPU::ORA, &CPU::ASL_M, &CPU::SLO, &CPU::PHP, &CPU::ORA, &CPU::ASL_A, &CPU::ANC, &CPU::IGN,     &CPU::ORA, &CPU::ASL_M, &CPU::SLO, // 0
+	&CPU::BPL, &CPU::ORA, &CPU::KIL, &CPU::SLO, &CPU::SKB, &CPU::ORA, &CPU::ASL_M, &CPU::SLO, &CPU::CLC, &CPU::ORA, &CPU::NOP,   &CPU::SLO, &CPU::IGN,     &CPU::ORA, &CPU::ASL_M, &CPU::SLO, // 1
+	&CPU::JSR, &CPU::AND, &CPU::KIL, &CPU::RLA, &CPU::BIT, &CPU::AND, &CPU::ROL_M, &CPU::RLA, &CPU::PLP, &CPU::AND, &CPU::ROL_A, &CPU::ANC, &CPU::BIT,     &CPU::AND, &CPU::ROL_M, &CPU::RLA, // 2
+	&CPU::BMI, &CPU::AND, &CPU::KIL, &CPU::RLA, &CPU::SKB, &CPU::AND, &CPU::ROL_M, &CPU::RLA, &CPU::SEC, &CPU::AND, &CPU::NOP,   &CPU::RLA, &CPU::IGN,     &CPU::AND, &CPU::ROL_M, &CPU::RLA, // 3
+	&CPU::RTI, &CPU::EOR, &CPU::KIL, &CPU::SRE, &CPU::SKB, &CPU::EOR, &CPU::LSR_M, &CPU::SRE, &CPU::PHA, &CPU::EOR, &CPU::LSR_A, &CPU::ALR, &CPU::JMP_Abs, &CPU::EOR, &CPU::LSR_M, &CPU::SRE, // 4
+	&CPU::BVC, &CPU::EOR, &CPU::KIL, &CPU::SRE, &CPU::SKB, &CPU::EOR, &CPU::LSR_M, &CPU::SRE, &CPU::CLI, &CPU::EOR, &CPU::NOP,   &CPU::SRE, &CPU::IGN,     &CPU::EOR, &CPU::LSR_M, &CPU::SRE, // 5
+	&CPU::RTS, &CPU::ADC, &CPU::KIL, &CPU::RRA, &CPU::SKB, &CPU::ADC, &CPU::ROR_M, &CPU::RRA, &CPU::PLA, &CPU::ADC, &CPU::ROR_A, &CPU::ARR, &CPU::JMP_Ind, &CPU::ADC, &CPU::ROR_M, &CPU::RRA, // 6
+	&CPU::BVS, &CPU::ADC, &CPU::KIL, &CPU::RRA, &CPU::SKB, &CPU::ADC, &CPU::ROR_M, &CPU::RRA, &CPU::SEI, &CPU::ADC, &CPU::NOP,   &CPU::RRA, &CPU::IGN,     &CPU::ADC, &CPU::ROR_M, &CPU::RRA, // 7
+	&CPU::SKB, &CPU::STA, &CPU::SKB, &CPU::SAX, &CPU::STY, &CPU::STA, &CPU::STX,   &CPU::SAX, &CPU::DEY, &CPU::SKB, &CPU::TXA,   &CPU::XAA, &CPU::STY,     &CPU::STA, &CPU::STX,   &CPU::SAX, // 8
+	&CPU::BCC, &CPU::STA, &CPU::KIL, &CPU::AHX, &CPU::STY, &CPU::STA, &CPU::STX,   &CPU::SAX, &CPU::TYA, &CPU::STA, &CPU::TXS,   &CPU::TAS, &CPU::SHY,     &CPU::STA, &CPU::SHX,   &CPU::AHX, // 9
+	&CPU::LDY, &CPU::LDA, &CPU::LDX, &CPU::LAX, &CPU::LDY, &CPU::LDA, &CPU::LDX,   &CPU::LAX, &CPU::TAY, &CPU::LDA, &CPU::TAX,   &CPU::LAX, &CPU::LDY,     &CPU::LDA, &CPU::LDX,   &CPU::LAX, // A
+	&CPU::BCS, &CPU::LDA, &CPU::KIL, &CPU::LAX, &CPU::LDY, &CPU::LDA, &CPU::LDX,   &CPU::LAX, &CPU::CLV, &CPU::LDA, &CPU::TSX,   &CPU::LAS, &CPU::LDY,     &CPU::LDA, &CPU::LDX,   &CPU::LAX, // B
+	&CPU::CPY, &CPU::CPA, &CPU::SKB, &CPU::DCP, &CPU::CPY, &CPU::CPA, &CPU::DEC,   &CPU::DCP, &CPU::INY, &CPU::CPA, &CPU::DEX,   &CPU::AXS, &CPU::CPY,     &CPU::CPA, &CPU::DEC,   &CPU::DCP, // C
+	&CPU::BNE, &CPU::CPA, &CPU::KIL, &CPU::DCP, &CPU::SKB, &CPU::CPA, &CPU::DEC,   &CPU::DCP, &CPU::CLD, &CPU::CPA, &CPU::NOP,   &CPU::DCP, &CPU::IGN,     &CPU::CPA, &CPU::DEC,   &CPU::DCP, // D
+	&CPU::CPX, &CPU::SBC, &CPU::SKB, &CPU::ISC, &CPU::CPX, &CPU::SBC, &CPU::INC,   &CPU::ISC, &CPU::INX, &CPU::SBC, &CPU::NOP,   &CPU::SBC, &CPU::CPX,     &CPU::SBC, &CPU::INC,   &CPU::ISC, // E
+	&CPU::BEQ, &CPU::SBC, &CPU::KIL, &CPU::ISC, &CPU::SKB, &CPU::SBC, &CPU::INC,   &CPU::ISC, &CPU::SED, &CPU::SBC, &CPU::NOP,   &CPU::ISC, &CPU::IGN,     &CPU::SBC, &CPU::INC,   &CPU::ISC  // F
 };

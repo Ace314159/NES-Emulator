@@ -18,7 +18,7 @@ int main(int argc, char* argv[]) {
 		while(nes.isRunning()) {
 			nes.tick();
 		}
-	} catch(std::runtime_error& e) {
+	} catch(const std::runtime_error& e) {
 		cout << e.what() << endl;
 		return -1;
 	}

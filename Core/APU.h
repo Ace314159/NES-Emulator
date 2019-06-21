@@ -18,9 +18,6 @@ public:
 	uint8_t& status = mem.apuRegisters[0x15];
 	uint8_t& frameCounter = mem.apuRegisters[0x17];
 
-	// Useful Variables
-	uint16_t& registerRead = mem.apuRegisterRead;
-	uint16_t& registerWritten = mem.apuRegisterWritten;
 	// Frame Counter
 	bool resetFrameCounter = false;
 	uint8_t newFrameCounter = 0;
@@ -35,8 +32,8 @@ public:
 	void emulateCycle();
 
 	// Useful Functions
-	void handleRegisterReads();
-	void handleRegisterWrites();
+	void registerRead(uint16_t addr);
+	void registerWritten(uint16_t addr);
 	void emulateFrameCounter();
 	void quarterFrame();
 	void halfFrame();

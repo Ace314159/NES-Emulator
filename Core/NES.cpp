@@ -7,15 +7,7 @@ NES::NES(const fs::path& romFileName) { loadRom(romFileName); }
 NES::~NES() { glfwTerminate(); }
 
 void NES::tick() {
-	this->cpu.emulateCycle();
-	this->mem.mapper->CPUcycleCount++;
-
-	this->ppu.emulateDot();
-	this->ppu.emulateAferCPU();
-	this->ppu.emulateDot();
-	this->ppu.emulateDot();
-
-	this->apu.emulateCycle();
+	this->cpu.emulateInstr();
 
 	this->handleInput();
 }
@@ -50,15 +42,15 @@ void NES::loadRom(const fs::path& romFilePath) {
 }
 
 void NES::handleInput() {
-	if(this->cpu.mem.apuRegisters[0x16] & 0x1) {
-		this->cpu.mem.buttons1[0] = glfwGetKey(this->ppu.window.window, GLFW_KEY_A);
-		this->cpu.mem.buttons1[1] = glfwGetKey(this->ppu.window.window, GLFW_KEY_B);
-		this->cpu.mem.buttons1[2] = glfwGetKey(this->ppu.window.window, GLFW_KEY_E);
-		this->cpu.mem.buttons1[3] = glfwGetKey(this->ppu.window.window, GLFW_KEY_T);
-		this->cpu.mem.buttons1[4] = glfwGetKey(this->ppu.window.window, GLFW_KEY_UP);
-		this->cpu.mem.buttons1[5] = glfwGetKey(this->ppu.window.window, GLFW_KEY_DOWN);
-		this->cpu.mem.buttons1[6] = glfwGetKey(this->ppu.window.window, GLFW_KEY_LEFT);
-		this->cpu.mem.buttons1[7] = glfwGetKey(this->ppu.window.window, GLFW_KEY_RIGHT);
+	if(this->cpu.mem.apuRegisters[0x16] & 0x01) {
+		this->cpu.mem.buttons1[0] = glfwGetKey(this->ppu.window.window, GLFW_KEY_A) == GLFW_PRESS;
+		this->cpu.mem.buttons1[1] = glfwGetKey(this->ppu.window.window, GLFW_KEY_B) == GLFW_PRESS;
+		this->cpu.mem.buttons1[2] = glfwGetKey(this->ppu.window.window, GLFW_KEY_E) == GLFW_PRESS;
+		this->cpu.mem.buttons1[3] = glfwGetKey(this->ppu.window.window, GLFW_KEY_T) == GLFW_PRESS;
+		this->cpu.mem.buttons1[4] = glfwGetKey(this->ppu.window.window, GLFW_KEY_UP) == GLFW_PRESS;
+		this->cpu.mem.buttons1[5] = glfwGetKey(this->ppu.window.window, GLFW_KEY_DOWN) == GLFW_PRESS;
+		this->cpu.mem.buttons1[6] = glfwGetKey(this->ppu.window.window, GLFW_KEY_LEFT) == GLFW_PRESS;
+		this->cpu.mem.buttons1[7] = glfwGetKey(this->ppu.window.window, GLFW_KEY_RIGHT) == GLFW_PRESS;
 		this->cpu.mem.buttons1Index = 0;
 	}
 }

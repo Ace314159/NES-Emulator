@@ -17,7 +17,7 @@ void Noise::emulateCycle() {
 
 	if(this->timerCounter == 0) {
 		// Feedback Bit = Bit 1 ^ (Bit 6 if modeFlag is set else Bit 1)
-		bool feedbackBit = (this->LFSR & 0x1) ^ ((this->LFSR >> (1 + this->mode() * 5) & 0x1));
+		bool feedbackBit = (this->LFSR & 0x01) ^ ((this->LFSR >> (1 + this->mode() * 5) & 0x01));
 		this->LFSR >>= 1;
 		// Clear Bits 15 and 14 and set Bit 14 to feedbackBit - LFSR is 15 bits wide
 		this->LFSR = (this->LFSR & ~(0x3 << 14)) | (feedbackBit << 14);
@@ -26,7 +26,7 @@ void Noise::emulateCycle() {
 }
 
 uint8_t Noise::generateSample() {
-	if(this->lengthCounter == 0 || (this->LFSR & 0x1)) return 0;
+	if(this->lengthCounter == 0 || (this->LFSR & 0x01)) return 0;
 	return this->getVolume();
 }
 

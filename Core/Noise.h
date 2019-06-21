@@ -15,9 +15,9 @@ public:
 
 	// Get Register Values
 	// LCVV
-	bool lengthCounterHalt() { return (this->LCV >> 5) & 0x1; };
+	bool lengthCounterHalt() { return (this->LCV >> 5) & 0x01; };
 	bool envelopeLoop() { return this->lengthCounterHalt(); };
-	bool constantVolume() override { return (this->LCV >> 4) & 0x1; };
+	bool constantVolume() override { return (this->LCV >> 4) & 0x01; };
 	uint8_t volume() override { return this->LCV & 0xF; };
 	// modePeriod
 	bool mode() { return modePeriod >> 7; };
@@ -32,7 +32,7 @@ public:
 	static const std::array<uint16_t, 0x10> timerPeriods;
 	uint16_t timerCounter;
 	// Linear-Feedback Shift Register
-	uint16_t LFSR = 0x1;
+	uint16_t LFSR = 0x0001;
 
 	// Channel Functions
 	void emulateCycle() override;

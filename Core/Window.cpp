@@ -83,9 +83,8 @@ void Window::renderScreen() {
 		GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 
-	// Wait to ensure correct framerate
+	// Wait to ensure correct framerate - TODO: Use faster method
 	while(std::chrono::high_resolution_clock::now() < this->prevFrameTime + NTSC_FRAME_PERIOD);
-	// std::this_thread::sleep_until(this->prevFrameTime + NTSC_FRAME_PERIOD);
 	this->prevFrameTime = std::chrono::high_resolution_clock::now();
 
 	// Display to screen
