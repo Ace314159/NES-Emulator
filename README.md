@@ -1,7 +1,22 @@
-An eventual cycle accureate NES emulator
+# NES Emulator
 
-All of the CPU works - Both official and unofficial opcodes
+An eventual cycle accurate NES emulator
 
-PPU can play most games
+## Accuracy
 
-APU does not work at all and has not even been started
+* All of the CPU works - Both official and unofficial opcodes
+* PPU can play most games
+* APU mostly works, except for DMC
+
+## Mappers Supported
+
+* NROM
+* MMC1
+* UxROM
+* MMC3 - Mostly Working
+
+## Details
+
+* Built with C++
+* GLFW for window and input
+* SDL for audio
