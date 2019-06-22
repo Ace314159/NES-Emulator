@@ -19,9 +19,11 @@ public:
 	uint8_t& frameCounter = mem.apuRegisters[0x17];
 
 	// Frame Counter
-	bool resetFrameCounter = false;
+	int resetFrameCounterTime = -1;
 	uint8_t newFrameCounter = 0;
-	unsigned int frameCounterCycle = 5;
+	// After reset or power-up, APU acts as if $4017 were written with $00 from
+	// 9 to 12 clocks before first instruction begins.
+	unsigned int frameCounterCycle = 10;
 
 	// Channels
 	Pulse pulse1{mem.apuRegisters.data() + 0x0, false};
@@ -32,7 +34,7 @@ public:
 	void emulateCycle();
 
 	// Useful Functions
-	void registerRead(uint16_t addr);
+	// void registerRead(uint16_t addr);
 	void registerWritten(uint16_t addr);
 	void emulateFrameCounter();
 	void quarterFrame();

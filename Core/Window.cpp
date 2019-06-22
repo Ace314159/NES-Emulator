@@ -82,11 +82,11 @@ void Window::renderScreen() {
 	glBlitFramebuffer(0, 0, width, height, texX, texY, windowWidth - texX, windowHeight - texY,
 		GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-
+#ifndef _DEBUG
 	// Wait to ensure correct framerate - TODO: Use faster method
 	while(std::chrono::high_resolution_clock::now() < this->prevFrameTime + NTSC_FRAME_PERIOD);
 	this->prevFrameTime = std::chrono::high_resolution_clock::now();
-
+#endif
 	// Display to screen
 	glfwSwapBuffers(window);
 	glfwPollEvents();

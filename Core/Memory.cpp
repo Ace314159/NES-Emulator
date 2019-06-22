@@ -65,15 +65,19 @@ uint8_t Memory::getRAM8(uint16_t addr) {
 			if(this->buttons1Index < 8) return this->buttons1[this->buttons1Index++];
 			else return 0x01;
 		}
+		uint8_t returnVal;
 		switch(addr) {
 		case 0x4015:
-			return (this->mapper->IRQCalled << 6) | ((this->apu.noise.lengthCounter > 0) << 3) |
+			returnVal = (this->mapper->IRQCalled << 6) | ((this->apu.noise.lengthCounter > 0) << 3) |
 				((this->apu.triangle.lengthCounter > 0) << 2) | ((this->apu.pulse2.lengthCounter > 0) << 1) |
 				((this->apu.pulse1.lengthCounter > 0) << 0);
+			this->mapper->IRQCalled = false;
 			break;
+		default:
+			returnVal = addrValue;
 		}
-		this->apu.registerRead(addr);
-		return addrValue;
+		// this->apu.registerRead(addr);
+		return returnVal;
 		break;
 	case RAMAddrType::WRAM:
 		return addrValue;
@@ -113,12 +117,14 @@ void Memory::setRAM8(uint16_t addr, uint8_t data) {
 			break;
 		case 0x4017:
 			this->apu.newFrameCounter = data;
+			// Reset after 3 or 4 CPU clock cycles after write
+			this->apu.resetFrameCounterTime = 3 + (this->mapper->CPUcycleCount % 2);
 			break;
 		default:
 			addrValue = data;
 			break;
 		}
-		if(addr != 0x4016) this->apu.registerWritten(addr);
+		this->apu.registerWritten(addr);
 		break;
 	case RAMAddrType::WRAM:
 		addrValue = data;

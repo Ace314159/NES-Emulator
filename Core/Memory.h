@@ -39,8 +39,6 @@ public:
 
 	// NMI
 	bool NMICalled = false; // PPU Request
-	// IRQ
-	bool inIRQ = false;
 
 	// PPU
 	// Main

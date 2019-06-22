@@ -6,21 +6,11 @@
 APU::APU(Memory& m) : mem(m) { this->fillLookupTables(); }
 
 void APU::emulateCycle() {
-	this->emulateFrameCounter(); // Clock represents half cycle
-
-	this->triangle.emulateCycle();
-	this->triangle.dontChangeLengthCounter = false;
-	this->pulse1.dontChangeLengthCounter = false;
-	this->pulse2.dontChangeLengthCounter = false;
-	this->noise.dontChangeLengthCounter = false;
-	if(this->mem.mapper->CPUcycleCount % 2 == 0) {
-		this->pulse1.emulateCycle();
-		this->pulse2.emulateCycle();
-		this->noise.emulateCycle();
-
-		if(this->resetFrameCounter) {
-			this->frameCounterCycle = -1;
-			this->resetFrameCounter = false;
+	if(this->resetFrameCounterTime >= 0) {
+		this->resetFrameCounterTime--;
+		if(this->resetFrameCounterTime == 0) {
+			this->frameCounterCycle = 0;
+			this->resetFrameCounterTime = -1;
 			this->frameCounter = this->newFrameCounter;
 			if((this->frameCounter >> 6) & 0x01) this->mem.mapper->IRQCalled = false;
 			if(this->frameCounter >> 7) {
@@ -29,16 +19,31 @@ void APU::emulateCycle() {
 			}
 		}
 	}
+	this->emulateFrameCounter();
+	// Changes to length counter halt occur after clocking length, not before
+	this->pulse1.lengthCounterHaltVal = this->pulse1.lengthCounterHalt();
+	this->pulse2.lengthCounterHaltVal = this->pulse2.lengthCounterHalt();
+	this->triangle.lengthCounterHaltVal = this->triangle.lengthCounterHalt();
+	this->noise.lengthCounterHaltVal = this->noise.lengthCounterHalt();
+
+	this->triangle.emulateCycle();
+	if(this->mem.mapper->CPUcycleCount % 2 == 0) {
+		this->pulse1.emulateCycle();
+		this->pulse2.emulateCycle();
+		this->noise.emulateCycle();
+	}
 	this->queueAudio();
 }
 
-void APU::registerRead(uint16_t addr) {
+
+// Useful Functions
+/*void APU::registerRead(uint16_t addr) {
 	switch(addr) {
 	case 0x4015:
 		this->mem.mapper->IRQCalled = false;
 		break;
 	}
-}
+}*/
 
 void APU::registerWritten(uint16_t addr) {
 	switch(addr) {
@@ -75,9 +80,6 @@ void APU::registerWritten(uint16_t addr) {
 		this->pulse2.enabled = (this->status >> 1) & 0x01;
 		this->triangle.enabled = (this->status >> 2) & 0x01;
 		this->noise.enabled = (this->status >> 3) & 0x01;
-		break;
-	case 0x4017:
-		this->resetFrameCounter = true;
 		break;
 	}
 }
@@ -145,7 +147,7 @@ void APU::halfFrame() {
 }
 
 void APU::changeIRQ() {
-	this->mem.mapper->IRQCalled = !((this->frameCounter >> 6) & 0x01);
+	if(!((this->frameCounter >> 6) & 0x01)) this->mem.mapper->IRQCalled = true;
 }
 
 

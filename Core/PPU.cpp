@@ -6,20 +6,12 @@
 
 PPU::PPU(Memory& m) : mem(m) { }
 
-void PPU::emulateAferCPU() {
-	// Checks if an NMI should occur
-	if((this->STATUS >> 7) & (this->CTRL >> 7)) {
-		if(this->NMIPinHigh) this->mem.NMICalled = true; // Edge-sensitivity
-		this->NMIPinHigh = false;
-	} else {
-		this->NMIPinHigh = true;
-	}
-}
-
 void PPU::registerRead(uint16_t addr) {
 	switch(addr) {
 	case 0x2002: // STATUS
+		this->mem.NMICalled = false;
 		this->STATUS &= ~(1 << 7); // Clear VBlank Flag
+		this->checkNMI();
 		this->onSecondWrite = false; // Reset address latch
 		break;
 	case 0x2007: // DATA
@@ -39,6 +31,7 @@ void PPU::registerWritten(uint16_t addr) {
 	case 0x2000: // CTRL
 		// t: ...BA.. ........ = d: ......BA
 		this->tempVramAddr = (this->tempVramAddr & ~0xC00) | (this->CTRL & 0x3) << 10;
+		this->checkNMI();
 		break;
 	case 0x2004: // OAM DATA
 		if(this->OAMADDR % 4 == 2) this->OAMDATA &= 0xE3;
@@ -90,6 +83,7 @@ void PPU::emulateDot() {
 	} else if(this->scanlineNum == -1) { // Pre-render Scanline
 		if(this->cycleNum == 1) {
 			this->STATUS &= ~(0b111 << 5); // Clear VBlank, Sprite 0, and Sprite Overflow
+			this->checkNMI();
 			this->sprite0IsInSOAM = this->sprite0Hit = false;
 		} else if(this->isRendering() && this->cycleNum >= 280 && this->cycleNum <= 304) {
 			// vert(v) = vert(t)
@@ -130,6 +124,7 @@ void PPU::emulateDot() {
 		}
 	} else if(this->scanlineNum == 241 && this->cycleNum == 1) {
 		this->STATUS |= (1 << 7); // Set VBlank flag
+		this->checkNMI();
 		this->window.renderScreen();
 	} else if(this->scanlineNum != -1 && this->scanlineNum < 240 && this->cycleNum <= 256)
 		// Rendering is disabled but still needs to output color - 0, 0 doesn't matter
@@ -145,6 +140,15 @@ void PPU::emulateDot() {
 
 
 // Useful Functions
+void PPU::checkNMI() {
+	if(0x80 & this->STATUS & this->CTRL) {
+		if(this->NMIPinHigh) this->mem.NMICalled = true; // Edge-sensitivity
+		this->NMIPinHigh = false;
+	} else {
+		this->NMIPinHigh = true;
+	}
+}
+
 bool PPU::isRenderingBG() {
 	return this->MASK & 0x08;
 }

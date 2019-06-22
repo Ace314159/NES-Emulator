@@ -64,12 +64,12 @@ public:
 	bool NMIPinHigh = true;
 	uint8_t OAMDMAStartAddr;
 
-	void emulateAferCPU(); // Emulates all interactions with CPU
 	void registerRead(uint16_t addr);
 	void registerWritten(uint16_t addr);
 	void emulateDot();
 
 	// Useful Functions
+	void checkNMI();
 	bool isRenderingBG();
 	bool isRenderingSprites();
 	bool isRendering();

@@ -22,7 +22,6 @@
     <ClCompile Include="APU.cpp" />
     <ClCompile Include="Audio.cpp" />
     <ClCompile Include="BaseMapper.cpp" />
-    <ClCompile Include="Channel.cpp" />
     <ClCompile Include="CNROM.cpp" />
     <ClCompile Include="CPU.cpp" />
     <ClCompile Include="glad.c">

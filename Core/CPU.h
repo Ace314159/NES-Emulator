@@ -38,13 +38,15 @@ public:
 	uint8_t opcode;
 	uint8_t operand;
 	uint16_t effectiveAddr;
-	bool doingIllegalOpcode = false;
+	bool prevInterruptCalled = false;
+	bool interruptCalled = false;
 
 	// Get Appropriate Addressing Mode or Operation
 	static void(CPU::*addressingModes[256])();
 	static void(CPU::*operations[256])();
 
 	// Other
+	void handleInterrupts();
 	void OAMDMA();
 
 	void emulateInstr(); // Emulates a single instruction
@@ -100,7 +102,7 @@ public:
 	uint16_t stackPullWord() { return this->stackPull() | (this->stackPull() << 8); };
 
 	// Operations
-	void interrupt(uint16_t vectorLocation, bool isBRK);
+	void interrupt(bool isBRK);
 	uint8_t RMW(uint8_t(CPU::*operation)(uint8_t val)); // Read, Modify, Write Operations
 	void branchOp(bool branchResult); // Branch Operations
 	
