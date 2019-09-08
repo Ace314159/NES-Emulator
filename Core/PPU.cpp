@@ -98,12 +98,15 @@ void PPU::registerWritten(uint16_t addr, uint8_t oldValue) {
 
 void PPU::emulateDot() {
 	if(this->cycleNum == 0) { // Idle
-		if(this->scanlineNum == -1) this->oddFrame = !this->oddFrame;
+		if(this->scanlineNum == -1) {
+			this->oddFrame = !this->oddFrame;
+			this->STATUS &= ~(0b11 << 5); // Clear Sprite 0 and Sprite Overflow
+		}
 		this->cycleNum++;
 		return;
 	} else if(this->scanlineNum == -1) { // Pre-render Scanline
 		if(this->cycleNum == 1) {
-			this->STATUS &= ~(0b111 << 5); // Clear VBlank, Sprite 0, and Sprite Overflow
+			this->STATUS &= ~0x80; // Clear VBlank
 			this->sprite0IsInSOAM = this->sprite0Hit = false;
 		} else if(this->isRendering() && this->cycleNum >= 280 && this->cycleNum <= 304) {
 			// vert(v) = vert(t)
