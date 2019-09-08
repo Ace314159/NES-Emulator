@@ -102,7 +102,7 @@ public:
 	uint16_t stackPullWord() { return this->stackPull() | (this->stackPull() << 8); };
 
 	// Operations
-	void interrupt(bool isBRK);
+	void interrupt();
 	uint8_t RMW(uint8_t(CPU::*operation)(uint8_t val)); // Read, Modify, Write Operations
 	void branchOp(bool branchResult); // Branch Operations
 	

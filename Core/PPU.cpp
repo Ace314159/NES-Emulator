@@ -1,4 +1,4 @@
-#include "stdafx.h"
+	#include "stdafx.h"
 #include "PPU.h"
 
 #include "CPU.h"
@@ -6,32 +6,53 @@
 
 PPU::PPU(Memory& m) : mem(m) { }
 
-void PPU::registerRead(uint16_t addr) {
+uint8_t PPU::registerRead(uint16_t addr) {
+	uint8_t returnVal;
 	switch(addr) {
 	case 0x2002: // STATUS
-		this->mem.NMICalled = false;
-		this->STATUS &= ~(1 << 7); // Clear VBlank Flag
-		this->checkNMI();
 		this->onSecondWrite = false; // Reset address latch
+		this->STATUS = (this->STATUS & ~0x1F) | (this->mem.cpuPpuBus & 0x1F);
+		returnVal = this->STATUS;
+		this->STATUS &= ~0x80; // Clear VBlank Flag
+		if(this->scanlineNum == 241 && this->cycleNum > 0 && this->cycleNum <= 3) {
+			this->noNMI = true;
+			this->mem.NMICalled = false;
+			if(this->cycleNum != 1) return returnVal | 0x80;
+		}
+		return returnVal;
+		break;
+	case 0x2004:
+		return this->mem.OAM[this->OAMADDR]; // Gets OAM data at OAMADDR
 		break;
 	case 0x2007: // DATA
 		if(this->currentVramAddr <= 0x3EFF) {
-			mem.ppuDATAReadBuffer = mem.getVRAM8(this->currentVramAddr);
+			returnVal = this->mem.ppuDATAReadBuffer;
+			this->mem.mapper->setPPUBusAddress(this->mem.ppuDATAReadBuffer, this->cycleNum);
+			this->mem.ppuDATAReadBuffer = this->mem.getVRAM8(this->currentVramAddr);
 		} else {
-			mem.ppuDATAReadBuffer = mem.getVRAM8(this->currentVramAddr & ~0x1000);
+			returnVal = this->mem.getPaletteLoc(this->currentVramAddr - 0x3F00);
+			this->mem.ppuDATAReadBuffer = this->mem.getVRAM8(this->currentVramAddr & ~0x1000);
 		}
 		this->currentVramAddr += 1 + ((this->CTRL >> 2) & 0x01) * 31;
 		this->mem.mapper->setPPUBusAddress(this->currentVramAddr, this->cycleNum);
+		return returnVal;
+		break;
+	default:
+		return this->mem.ppuRegisters[addr - 0x2000];
 		break;
 	}
 }
 
-void PPU::registerWritten(uint16_t addr) {
+void PPU::registerWritten(uint16_t addr, uint8_t oldValue) {
 	switch(addr) {
 	case 0x2000: // CTRL
 		// t: ...BA.. ........ = d: ......BA
 		this->tempVramAddr = (this->tempVramAddr & ~0xC00) | (this->CTRL & 0x3) << 10;
-		this->checkNMI();
+		if(!(oldValue & 0x80) && (this->CTRL & 0x80) && (this->STATUS & 0x80) && 
+			(this->scanlineNum != -1 || this->cycleNum != 1))
+			this->mem.NMICalled = true;
+		if(this->scanlineNum == 241 && this->cycleNum > 0 && this->cycleNum <= 3 && !(this->CTRL & 0x80))
+			this->mem.NMICalled = false;
 		break;
 	case 0x2004: // OAM DATA
 		if(this->OAMADDR % 4 == 2) this->OAMDATA &= 0xE3;
@@ -83,7 +104,6 @@ void PPU::emulateDot() {
 	} else if(this->scanlineNum == -1) { // Pre-render Scanline
 		if(this->cycleNum == 1) {
 			this->STATUS &= ~(0b111 << 5); // Clear VBlank, Sprite 0, and Sprite Overflow
-			this->checkNMI();
 			this->sprite0IsInSOAM = this->sprite0Hit = false;
 		} else if(this->isRendering() && this->cycleNum >= 280 && this->cycleNum <= 304) {
 			// vert(v) = vert(t)
@@ -122,10 +142,14 @@ void PPU::emulateDot() {
 			}
 			this->fetchSpriteData();
 		}
-	} else if(this->scanlineNum == 241 && this->cycleNum == 1) {
-		this->STATUS |= (1 << 7); // Set VBlank flag
-		this->checkNMI();
-		this->window.renderScreen();
+	} else if(this->scanlineNum == 241) {
+		if(this->cycleNum == 1) {
+			if(!this->noNMI) {
+				this->STATUS |= 0x80; // Set VBlank flag
+				if(this->CTRL & 0x80) this->mem.NMICalled = true;
+			}
+			this->window.renderScreen();
+		}
 	} else if(this->scanlineNum != -1 && this->scanlineNum < 240 && this->cycleNum <= 256)
 		// Rendering is disabled but still needs to output color - 0, 0 doesn't matter
 		this->setDot(this->getBGColor(0, 0));
@@ -136,19 +160,11 @@ void PPU::emulateDot() {
 		this->scanlineNum = ((this->scanlineNum + 1 + 1) % (261 + 1)) - 1;
 		this->cycleNum = 0;
 	} else this->cycleNum++;
+	if(this->cycleNum >= 3) this->noNMI = false;
 }
 
 
 // Useful Functions
-void PPU::checkNMI() {
-	if(0x80 & this->STATUS & this->CTRL) {
-		if(this->NMIPinHigh) this->mem.NMICalled = true; // Edge-sensitivity
-		this->NMIPinHigh = false;
-	} else {
-		this->NMIPinHigh = true;
-	}
-}
-
 bool PPU::isRenderingBG() {
 	return this->MASK & 0x08;
 }

@@ -8,13 +8,17 @@ CPU::CPU(Memory& m) : mem(m) {}
 
 
 void CPU::emulateInstr() {
-#ifdef _DEBUG
-	/*printf("%04X  A:%02X X:%02X Y:%02X P:%02X SP:%02X CYC:%-3d SL:%-3d  %u\n", PC,
-		A, X, Y, P.byte.to_ulong(), S, this->mem.ppu.cycleNum, this->mem.ppu.scanlineNum,
-		this->mem.mapper->CPUcycleCount);*/
+//#ifdef _DEBUG
+	/*if(this->mem.mapper->CPUcycleCount == 2469396)
+		std::cout << "";
+	int c = mem.ppu.cycleNum, s = mem.ppu.scanlineNum;
+	if(mem.ppu.cycleNum == 0) { c = 340; if(s == -1) { s = 260; } else s--; } else c--;
+	printf("%04X  A:%02X X:%02X Y:%02X P:%02X SP:%02X CYC:%-3d SL:%-3d  %u\n", PC,
+		A, X, Y, P.getByte() & ~0x20, S, c, s,
+		this->mem.mapper->CPUcycleCount);
 	/*printf("%04X  %02X    A:%02X X:%02X Y:%02X P:%02X SP:%02X CYC:%3d SL:%1d\n", PC, mem.getRAM8(PC),
 		A, X, Y, P.getByte(), S, this->mem.ppu.cycleNum, this->mem.ppu.scanlineNum);*/
-#endif
+//#endif
 	this->opcode = this->getMem(this->PC++);
 	(this->*(this->addressingModes[this->opcode]))();
 	(this->*(this->operations[this->opcode]))();
@@ -26,8 +30,7 @@ void CPU::emulateInstr() {
 void CPU::handleInterrupts() {
 	// The status of the interrupt lines at the end of the second-to-last cycle matters
 	if(this->prevInterruptCalled) {
-		this->interrupt(false);
-		this->mem.NMICalled = false;
+		this->interrupt();
 		this->mem.mapper->IRQCalled = false;
 	}
 }
@@ -58,14 +61,16 @@ void CPU::setMem(uint16_t addr, uint8_t data) {
 
 void CPU::clocked() {
 	this->prevInterruptCalled = this->interruptCalled;
-	this->interruptCalled = this->mem.NMICalled || (this->mem.mapper->IRQCalled && !this->P.I());
+
 	this->mem.mapper->CPUcycleCount++;
 
 	this->mem.ppu.emulateDot();
+	this->interruptCalled = this->mem.NMICalled || (this->mem.mapper->IRQCalled && !this->P.I());
 	this->mem.ppu.emulateDot();
 	this->mem.ppu.emulateDot();
 
 	this->mem.apu.emulateCycle();
+
 }
 
 
@@ -167,23 +172,19 @@ uint8_t CPU::stackPull() {
 
 
 // Operations
-void CPU::interrupt(bool isBRK) {
-	uint8_t flags;
-	if(isBRK) {
-		this->PC++; // Read without increment during dummyRead of implied
-		flags = this->P.getByte() | 0x10; // Sets B Flag
-	} else {
-		this->getMem(this->PC); // Garbage Opcode fetch
-		this->getMem(this->PC); // Garbage Next Instruction Read 
-		flags = this->P.getByte();
-	}
-
-	uint16_t vectorLocation = this->mem.NMICalled ? 0xFFFA : 0xFFFE;
-
+void CPU::interrupt() {
+	this->dummyRead(); // fetch opcode (and discard it - $00 (BRK) is forced into the opcode register instead)
+	this->dummyRead(); // read next instruction byte
+					   // (actually the same as above, since PC increment is suppressed. Also discarded.)
+	
 	this->stackPush(this->PC);
-	this->stackPush(flags);
-	this->P.I() = true;
-	this->PC = this->readWord(vectorLocation);
+	this->stackPush(this->P.getByte());
+	if(this->mem.NMICalled) {
+		this->PC = this->readWord(0xFFFA);
+		this->mem.NMICalled = false;
+	} else {
+		this->PC = this->readWord(0xFFFE);
+	}
 }
 
 uint8_t CPU::RMW(uint8_t(CPU::*operation)(uint8_t val)) {
@@ -290,7 +291,17 @@ void CPU::BPL() {
 }
 
 void CPU::BRK() {
-	this->interrupt(true);
+	this->PC++; // Read without increment during dummyRead of implied
+	this->stackPush(this->PC);
+
+	uint8_t flags = this->P.getByte() | 0x10; // Sets B Flag
+	uint16_t vectorLocation = this->mem.NMICalled ? 0xFFFA : 0xFFFE;
+
+	this->stackPush(flags);
+	this->P.I() = true;
+	this->PC = this->readWord(vectorLocation);
+
+	this->prevInterruptCalled = false;
 }
 
 void CPU::BVC() {

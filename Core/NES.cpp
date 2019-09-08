@@ -2,7 +2,7 @@
 #include "NES.h"
 #include "Memory.h"
 
-NES::NES(const fs::path& romFileName) { loadRom(romFileName); for(int i = 0; i < 30; i++) ppu.emulateDot(); }
+NES::NES(const fs::path& romFileName) { loadRom(romFileName); for(int i = 0; i < 31; i++) ppu.emulateDot(); }
 
 NES::~NES() { glfwTerminate(); }
 
