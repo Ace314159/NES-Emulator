@@ -68,18 +68,17 @@ uint16_t MMC1::getPRGBankSize() {
 }
 
 uint8_t MMC1::getCHRBank(uint16_t& addr) {
-	if(this->getCHRBankSize(addr) == 0x1000) {
+	if(CTRL >> 4) {
 		if(addr < 0x1000) return this->CHRBank0;
 		else {
 			addr -= 0x1000;
 			return this->CHRBank1;
 		}
-	} else return this->CHRBank0 & 0x1E;
+	} else return this->CHRBank0 & ~0x01;
 }
 
 uint16_t MMC1::getCHRBankSize(uint16_t addr) {
-	if(this->CTRL >> 4) return 0x1000;
-	else return 0x2000;
+	return 0x1000;
 }
 
 bool MMC1::WRAMEnabled() {
