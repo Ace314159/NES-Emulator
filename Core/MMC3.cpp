@@ -108,7 +108,7 @@ uint8_t MMC3::getCHRBank(uint16_t& addr) {
 		case 0x0800:
 			return this->R[4];
 			break;
-		case 0x0C000:
+		case 0x0C00:
 			return this->R[5];
 			break;
 		case 0x1000:
