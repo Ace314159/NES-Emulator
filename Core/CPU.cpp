@@ -9,12 +9,11 @@ CPU::CPU(Memory& m) : mem(m) {}
 
 void CPU::emulateInstr() {
 //#ifdef _DEBUG
-	/*if(this->mem.mapper->CPUcycleCount == 2469396)
+	if(this->mem.mapper->CPUcycleCount == 265629)
 		std::cout << "";
 	int c = mem.ppu.cycleNum, s = mem.ppu.scanlineNum;
-	if(mem.ppu.cycleNum == 0) { c = 340; if(s == -1) { s = 260; } else s--; } else c--;
-	printf("%04X  A:%02X X:%02X Y:%02X P:%02X SP:%02X CYC:%-3d SL:%-3d  %u\n", PC,
-		A, X, Y, P.getByte() & ~0x20, S, c, s,
+	/*printf("%04X  A:%02X X:%02X Y:%02X P:%02X SP:%02X CYC:%-3d SL:%-3d  %u\n", PC,
+		A, X, Y, P.getByte() & ~0x20, S, this->mem.ppu.cycleNum, this->mem.ppu.scanlineNum,
 		this->mem.mapper->CPUcycleCount);
 	/*printf("%04X  %02X    A:%02X X:%02X Y:%02X P:%02X SP:%02X CYC:%3d SL:%1d\n", PC, mem.getRAM8(PC),
 		A, X, Y, P.getByte(), S, this->mem.ppu.cycleNum, this->mem.ppu.scanlineNum);*/
@@ -49,14 +48,13 @@ void CPU::OAMDMA() {
 
 // Memory Accesses
 uint8_t CPU::getMem(uint16_t addr) {
-	uint8_t val = this->mem.getRAM8(addr);
 	this->clocked();
-	return val;
+	return this->mem.getRAM8(addr);;
 }
 
 void CPU::setMem(uint16_t addr, uint8_t data) {
-	this->mem.setRAM8(addr, data);
 	this->clocked();
+	this->mem.setRAM8(addr, data);
 }
 
 void CPU::clocked() {
@@ -65,12 +63,12 @@ void CPU::clocked() {
 	this->mem.mapper->CPUcycleCount++;
 
 	this->mem.ppu.emulateDot();
-	this->interruptCalled = this->mem.NMICalled || (this->mem.mapper->IRQCalled && !this->P.I());
 	this->mem.ppu.emulateDot();
 	this->mem.ppu.emulateDot();
 
 	this->mem.apu.emulateCycle();
 
+	this->interruptCalled = this->mem.NMICalled || (this->mem.mapper->IRQCalled && !this->P.I());
 }
 
 
@@ -182,8 +180,10 @@ void CPU::interrupt() {
 	if(this->mem.NMICalled) {
 		this->PC = this->readWord(0xFFFA);
 		this->mem.NMICalled = false;
+		this->P.I() = true;
 	} else {
 		this->PC = this->readWord(0xFFFE);
+		this->P.I() = true;
 	}
 }
 
@@ -322,7 +322,7 @@ void CPU::CLD() {
 
 void CPU::CLI() {
 	this->P.I() = 0;
-	this->mem.mapper->IRQCalled = false;
+	//this->mem.mapper->IRQCalled = false; - Commented for MMC3 IRQ to work
 }
 
 void CPU::CLV() {

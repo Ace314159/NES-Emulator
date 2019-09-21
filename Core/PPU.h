@@ -24,8 +24,8 @@ public:
 	uint8_t& OAMDMA = mem.apuRegisters[0x14];
 
 	// Useful variables to determine what to render
-	int scanlineNum = 0;
-	int cycleNum = 0;
+	int scanlineNum = -1;
+	int cycleNum = 340;
 	// Background
 	uint16_t currentVramAddr = 0; // yyyNNYYYYYXXXXX
 	uint16_t tempVramAddr = 0; // yyyNNYYYYYXXXXX
@@ -61,7 +61,6 @@ public:
 	// Useful variables to handle register reads and writes
 	bool canWrite = false;
 	bool oddFrame = true;
-	bool noNMI = false;
 	uint8_t OAMDMAStartAddr;
 
 	uint8_t registerRead(uint16_t addr);

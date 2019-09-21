@@ -14,10 +14,12 @@ uint8_t PPU::registerRead(uint16_t addr) {
 		this->STATUS = (this->STATUS & ~0x1F) | (this->mem.cpuPpuBus & 0x1F);
 		returnVal = this->STATUS;
 		this->STATUS &= ~0x80; // Clear VBlank Flag
-		if(this->scanlineNum == 241 && this->cycleNum > 0 && this->cycleNum <= 3) {
-			this->noNMI = true;
+		if(this->scanlineNum == 241 && this->cycleNum < 3) {
 			this->mem.NMICalled = false;
-			if(this->cycleNum != 1) return returnVal | 0x80;
+			// Reading one PPU clock before reads it as clear and never sets the flag or generates NMI for that frame
+			if(this->cycleNum == 0) return returnVal & ~0x80;
+			// Reading on the same PPU clock or one later reads it as set, clears it, and suppresses the NMI for that frame
+			return returnVal | 0x80;
 		}
 		return returnVal;
 		break;
@@ -46,12 +48,14 @@ uint8_t PPU::registerRead(uint16_t addr) {
 void PPU::registerWritten(uint16_t addr, uint8_t oldValue) {
 	switch(addr) {
 	case 0x2000: // CTRL
+		if(CTRL == 0x08)
+			std::cout << "";
 		// t: ...BA.. ........ = d: ......BA
 		this->tempVramAddr = (this->tempVramAddr & ~0xC00) | (this->CTRL & 0x3) << 10;
 		if(!(oldValue & 0x80) && (this->CTRL & 0x80) && (this->STATUS & 0x80) && 
-			(this->scanlineNum != -1 || this->cycleNum != 1))
+			(this->scanlineNum != -1 || this->cycleNum != 0))
 			this->mem.NMICalled = true;
-		if(this->scanlineNum == 241 && this->cycleNum > 0 && this->cycleNum <= 3 && !(this->CTRL & 0x80))
+		if(this->scanlineNum == 241 && this->cycleNum < 3 && !(this->CTRL & 0x80))
 			this->mem.NMICalled = false;
 		break;
 	case 0x2004: // OAM DATA
@@ -97,12 +101,20 @@ void PPU::registerWritten(uint16_t addr, uint8_t oldValue) {
 }
 
 void PPU::emulateDot() {
+	if(this->cycleNum == 340) {
+		this->scanlineNum = ((this->scanlineNum + 1 + 1) % (261 + 1)) - 1;
+		this->cycleNum = 0;
+	} else this->cycleNum++;
+
 	if(this->cycleNum == 0) { // Idle
 		if(this->scanlineNum == -1) {
-			this->oddFrame = !this->oddFrame;
 			this->STATUS &= ~(0b11 << 5); // Clear Sprite 0 and Sprite Overflow
+		} else if(this->scanlineNum == 240) this->oddFrame = !this->oddFrame;
+		else if(this->scanlineNum == 241) {
+			this->STATUS |= 0x80; // Set VBlank flag
+			if(this->CTRL & 0x80) this->mem.NMICalled = true;
+			this->window.renderScreen();	
 		}
-		this->cycleNum++;
 		return;
 	} else if(this->scanlineNum == -1) { // Pre-render Scanline
 		if(this->cycleNum == 1) {
@@ -135,8 +147,7 @@ void PPU::emulateDot() {
 			}
 			if(this->cycleNum % 8 == 0) this->incrementScrollX(); // Inc.hori(v)
 			if(this->cycleNum == 256) this->incrementScrollY(); // Inc. vert(v)
-		}
-		else {
+		} else {
 			if(this->cycleNum == 257) {
 				this->prevSpritesFound = this->spritesFound;
 				this->prevSprite0IsInSOAM = this->sprite0IsInSOAM;
@@ -145,25 +156,13 @@ void PPU::emulateDot() {
 			}
 			this->fetchSpriteData();
 		}
-	} else if(this->scanlineNum == 241) {
-		if(this->cycleNum == 1) {
-			if(!this->noNMI) {
-				this->STATUS |= 0x80; // Set VBlank flag
-				if(this->CTRL & 0x80) this->mem.NMICalled = true;
-			}
-			this->window.renderScreen();
-		}
 	} else if(this->scanlineNum != -1 && this->scanlineNum < 240 && this->cycleNum <= 256)
 		// Rendering is disabled but still needs to output color - 0, 0 doesn't matter
 		this->setDot(this->getBGColor(0, 0));
 
-	// Skip one cycle if odd frame and is rendering
-	if(this->scanlineNum == -1 && this->cycleNum == 338 && this->isRenderingBG()) this->cycleNum += this->oddFrame;
-	if(this->cycleNum == 340) {
-		this->scanlineNum = ((this->scanlineNum + 1 + 1) % (261 + 1)) - 1;
-		this->cycleNum = 0;
-	} else this->cycleNum++;
-	if(this->cycleNum >= 3) this->noNMI = false;
+	// Jump from (339, -1) to (0, 0), skipping (340, -1) when rendering BG
+	if(this->scanlineNum == -1 && this->cycleNum == 338 && this->isRenderingBG())
+		this->cycleNum += this->oddFrame;
 }
 
 

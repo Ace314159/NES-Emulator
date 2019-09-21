@@ -161,6 +161,6 @@ uint8_t Memory::getVRAM8(uint16_t addr) {
 }
 
 void Memory::setVRAM8(uint16_t addr, uint8_t data) {
-	assert(addr % 0x4000 >= 0x2000);
+	if(addr % 0x4000 < 0x2000) return;
 	this->getVRAMLoc(addr) = data;
 }
