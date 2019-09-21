@@ -20,7 +20,7 @@ std::pair<Memory::RAMAddrType, uint8_t*> Memory::getRAMAddrData(uint16_t& addr) 
 		return std::make_pair(RAMAddrType::PPU_REGISTER, &this->apuRegisters[0x14]);
 	else if(addr < 0x4018)
 		return std::make_pair(RAMAddrType::APU_REGISTER, &this->apuRegisters[addr - 0x4000]);
-	assert(addr >= 0x4020);
+	if(addr < 0x6000) return std::make_pair(RAMAddrType::CARTRIDGE, &temp);
 	if(addr < 0x8000) return std::make_pair(RAMAddrType::WRAM, &this->WRAM[addr - 0x6000]);
 
 	uint16_t addr2 = addr;
