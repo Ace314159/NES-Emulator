@@ -23,9 +23,10 @@ public:
 	uint8_t& DATA = mem.ppuRegisters[0x07] = 0;
 	uint8_t& OAMDMA = mem.apuRegisters[0x14];
 
-	// Useful variables to determine what to render
+	// Useful variables
 	int scanlineNum = -1;
 	int cycleNum = 340;
+	uint16_t busAddr = 0;
 	// Background
 	uint16_t currentVramAddr = 0; // yyyNNYYYYYXXXXX
 	uint16_t tempVramAddr = 0; // yyyNNYYYYYXXXXX
@@ -62,6 +63,7 @@ public:
 	bool canWrite = false;
 	bool oddFrame = true;
 	uint8_t OAMDMAStartAddr;
+	uint16_t busAddress;
 
 	uint8_t registerRead(uint16_t addr);
 	void registerWritten(uint16_t addr, uint8_t oldValue = 0);
@@ -77,8 +79,12 @@ public:
 	void evaluateSprites();
 	void fetchSpriteData();
 	void selectSpritePixel();
+	void setBusAddr(uint16_t addr);
+	void incrementVramAddr();
 	void incrementScrollX();
 	void incrementScrollY();
+	uint16_t getNTAddr();
+	uint16_t getATAddr();
 	uint8_t getBGColor(uint8_t paletteNum, uint8_t colorNum);
 	uint8_t getSpriteColor(uint8_t paletteNum, uint8_t colorNum);
 	void setPaletteTable(Color* paletteData);

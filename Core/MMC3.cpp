@@ -48,18 +48,18 @@ void MMC3::wroteRAM8(uint16_t addr, uint8_t data) {
 }
 
 void MMC3::setPPUBusAddress(uint16_t addr, int cycleNum) {
-	if(!this->prevA12 && (addr & 0x1000)) {
-		if(cycleNum - this->prevCycleNum > 8 || this->CPUcycleCount - this->prevCPUcycleCount > 3) {
-			uint8_t prevCount = this->IRQCounter;
+	if(addr & 0x1000) {
+		if(!this->prevA12 &&
+			(cycleNum - this->prevCycleNum > 8 || this->CPUcycleCount - this->prevCPUcycleCount > 3)) {
 			if(this->IRQCounter == 0 || this->IRQReload) this->IRQCounter = this->IRQLatch;
 			else this->IRQCounter--;
-			if((prevCount || this->IRQReload) && this->IRQCounter == 0 && this->IRQEnabled) this->IRQCalled = true;
+			if(this->IRQCounter == 0 && this->IRQEnabled) this->IRQCalled = true;
 			this->IRQReload = false;
 		}
 		this->prevCPUcycleCount = this->CPUcycleCount;
 		this->prevCycleNum = cycleNum;
-	}
-	this->prevA12 = addr & 0x1000;
+		this->prevA12 = true;
+	} else this->prevA12 = false;
 }
 
 uint8_t MMC3::getPRGBank(uint16_t& addr) {

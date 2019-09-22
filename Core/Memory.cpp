@@ -125,11 +125,12 @@ void Memory::setRAM8(uint16_t addr, uint8_t data) {
 
 // PPU
 uint8_t& Memory::getNametableLoc(uint16_t offsettedAddr) {
+	this->ppu.setBusAddr(offsettedAddr + 0x2000);
 	return *this->mapper->nametablePtrs[offsettedAddr];
 }
 
 uint8_t& Memory::getCHRLoc(uint16_t addr) {
-	this->mapper->setPPUBusAddress(addr, this->ppu.cycleNum);
+	this->ppu.setBusAddr(addr);
 	size_t bank = this->mapper->getCHRBank(addr); // Offsets addr
 	size_t bankSize = this->mapper->getCHRBankSize(addr);
 	return this->CHR[bank * bankSize + addr];

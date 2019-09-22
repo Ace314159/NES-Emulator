@@ -27,16 +27,14 @@ uint8_t PPU::registerRead(uint16_t addr) {
 		return this->mem.OAM[this->OAMADDR]; // Gets OAM data at OAMADDR
 		break;
 	case 0x2007: // DATA
-		if(this->currentVramAddr <= 0x3EFF) {
+		if(this->busAddr <= 0x3EFF) {
 			returnVal = this->mem.ppuDATAReadBuffer;
-			this->mem.mapper->setPPUBusAddress(this->mem.ppuDATAReadBuffer, this->cycleNum);
-			this->mem.ppuDATAReadBuffer = this->mem.getVRAM8(this->currentVramAddr);
+			this->mem.ppuDATAReadBuffer = this->mem.getVRAM8(this->busAddr);
 		} else {
-			returnVal = this->mem.getPaletteLoc(this->currentVramAddr - 0x3F00);
+			returnVal = this->mem.getPaletteLoc(this->busAddr - 0x3F00);
 			this->mem.ppuDATAReadBuffer = this->mem.getVRAM8(this->currentVramAddr & ~0x1000);
 		}
-		this->currentVramAddr += 1 + ((this->CTRL >> 2) & 0x01) * 31;
-		this->mem.mapper->setPPUBusAddress(this->currentVramAddr, this->cycleNum);
+		this->incrementVramAddr();
 		return returnVal;
 		break;
 	default:
@@ -82,7 +80,7 @@ void PPU::registerWritten(uint16_t addr, uint8_t oldValue) {
 			// Sets low 8 bits to the bits in ADDR
 			this->tempVramAddr = (this->tempVramAddr & ~0xFF) | this->ADDR;
 			this->currentVramAddr = this->tempVramAddr; // Gets all 8 bits
-			this->mem.mapper->setPPUBusAddress(this->currentVramAddr, this->cycleNum);
+			if(this->scanlineNum >= 240 || !this->isRendering()) this->setBusAddr(this->currentVramAddr);
 		} else {
 			// Sets Bits [8-13] to the low 6 bits in ADDR and clears bit 14
 			this->tempVramAddr = (this->tempVramAddr & ~(0x7F << 8)) | ((this->ADDR & 0x3F) << 8);
@@ -90,9 +88,12 @@ void PPU::registerWritten(uint16_t addr, uint8_t oldValue) {
 		this->onSecondWrite = !this->onSecondWrite;
 		break;
 	case 0x2007: // DATA
-		mem.setVRAM8(this->currentVramAddr++ & 0x3FFF, this->DATA);
-		this->currentVramAddr += ((this->CTRL >> 2) & 0x01) * 31; // Ads extra 31 if bit 2 is set
-		this->mem.mapper->setPPUBusAddress(this->currentVramAddr, this->cycleNum);
+		if(this->busAddr <= 0x3EFF || this->scanlineNum >= 240 || !this->isRendering()) {
+			this->mem.setVRAM8(this->busAddr, this->DATA);
+		} else {
+			this->mem.setVRAM8(this->busAddr, this->busAddr & 0xFF);
+		}
+		this->incrementVramAddr();
 		break;
 	case 0x4014: // OAM DMA
 		this->mem.cpu.OAMDMA();
@@ -109,11 +110,13 @@ void PPU::emulateDot() {
 	if(this->cycleNum == 0) { // Idle
 		if(this->scanlineNum == -1) {
 			this->STATUS &= ~(0b11 << 5); // Clear Sprite 0 and Sprite Overflow
-		} else if(this->scanlineNum == 240) this->oddFrame = !this->oddFrame;
-		else if(this->scanlineNum == 241) {
+		} else if(this->scanlineNum == 240) {
+			this->oddFrame = !this->oddFrame;
+			this->window.renderScreen();
+			this->setBusAddr(this->currentVramAddr);
+		} else if(this->scanlineNum == 241) {
 			this->STATUS |= 0x80; // Set VBlank flag
 			if(this->CTRL & 0x80) this->mem.NMICalled = true;
-			this->window.renderScreen();	
 		}
 		return;
 	} else if(this->scanlineNum == -1) { // Pre-render Scanline
@@ -245,18 +248,18 @@ void PPU::fetchBGData() {
 		}
 		break;
 	case 2: // NT Byte
-		this->tileNum = mem.getNametableLoc(v & 0x0FFF);
+		this->tileNum = mem.getNametableLoc(this->getNTAddr());
 		break;
 	case 4: // AT Byte
 		{
-		uint8_t atByte = mem.getNametableLoc(0x03C0 | (v & 0x0C00) | ((v >> 4) & 0x38) | ((v >> 2) & 0x07));
+		uint8_t atByte = mem.getNametableLoc(this->getATAddr());
 		uint8_t yBit = (v & 0x40) >> 5; // Bit 1 of coarse y in pos 1
 		uint8_t xBit = (v & 0x2) >> 1; // Bit 1 of carse x
 		// yx is used to select the corresponding 2 bits from the attribute byte
 		this->paletteNum = (atByte >> ((yBit | xBit) * 2)) & 0x3;
 		}
-		break;
-	case 6: // Low BG Tile Byte
+		/*break; - Fixes MMC3 IRQ Timing
+	case 6: // Low BG Tile Byte*/
 		this->lowTileByte = mem.getCHRLoc(bgPage | (this->tileNum << 4) | fineY);
 		break;
 	case 0: // High BG Tile Byte
@@ -312,20 +315,22 @@ void PPU::fetchSpriteData() { // Sprite Fetches
 			else // Bottom Half
 				this->tileNum = this->secondaryOAM[spriteNum * 4 + 1] | 0x01;
 		} else this->tileNum = this->secondaryOAM[spriteNum * 4 + 1];
+		mem.getNametableLoc(this->getNTAddr());
 		break;
 	case 3: // Sprite Attribute
 		this->spriteAttrs[spriteNum] = this->secondaryOAM[spriteNum * 4 + 2];
 		break;
 	case 4: // Sprite X
+		mem.getNametableLoc(this->getATAddr());
 		this->spriteXs[spriteNum] = this->secondaryOAM[spriteNum * 4 + 3];
-		break;
-	case 6: // Low Sprite Tile Byte
+		/*break; - Fixes MMC3 IRQ Timing
+	case 6: // Low Sprite Tile Byte*/
 		this->lowTileByte = mem.getCHRLoc(spritePage | (this->tileNum << 4) | fineY);
 		if(this->spriteAttrs[spriteNum] & 0x40) 
 			this->lowTileByte = this->BitReverseTable[this->lowTileByte];
 		this->lowSpriteShiftRegs[spriteNum] = this->lowTileByte;
 		break;
-	case 0: // Hgih Sprite Tile Byte
+	case 7: // High Sprite Tile Byte
 		this->highTileByte = mem.getCHRLoc(spritePage | (this->tileNum << 4) | 0x8 | fineY);
 		if(this->spriteAttrs[spriteNum] & 0x40)
 			this->highTileByte = this->BitReverseTable[this->highTileByte];
@@ -361,6 +366,24 @@ void PPU::selectSpritePixel() {
 	}
 }
 
+void PPU::setBusAddr(uint16_t addr) {
+	this->busAddr = addr & 0x3FFF; // PPU address space ends at 0x3FFF
+	this->mem.mapper->setPPUBusAddress(this->busAddr, this->cycleNum);
+}
+
+void PPU::incrementVramAddr() {
+	if(this->scanlineNum < 240 && this->isRendering()) {
+		this->incrementScrollX();
+		this->incrementScrollY();
+	} else {
+		this->currentVramAddr++;
+		this->currentVramAddr += ((this->CTRL >> 2) & 0x1) * 31; // Adds extra 31 if bit 2 is set
+		this->currentVramAddr &= 0x7FFF; // Only 15 bits wide
+
+		this->setBusAddr(this->currentVramAddr);
+	}
+}
+
 // From https://wiki.nesdev.com/w/index.php/PPU_scrolling#Wrapping_around
 void PPU::incrementScrollX() {
 	if((this->currentVramAddr & 0x001F) == 31) {
@@ -389,6 +412,15 @@ void PPU::incrementScrollY() {
 		// Put coarse y back
 		this->currentVramAddr = (this->currentVramAddr & ~0x03E0) | (coarseY << 5);
 	}
+}
+
+uint16_t PPU::getNTAddr() {
+	return this->currentVramAddr & 0x0FFF;
+}
+
+uint16_t PPU::getATAddr() {
+	return 0x03C0 | (this->currentVramAddr & 0x0C00) | ((this->currentVramAddr >> 4) & 0x38) | 
+		((this->currentVramAddr >> 2) & 0x07);
 }
 
 uint8_t PPU::getBGColor(uint8_t paletteNum, uint8_t colorNum) {
