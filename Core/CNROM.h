@@ -2,7 +2,7 @@
 
 #include "BaseMapper.h"
 
-
+/*
 class CNROM : public BaseMapper {
 private:
 	// Registers
@@ -18,4 +18,4 @@ public:
 	uint16_t getCHRBankSize(uint16_t addr) override;
 	bool WRAMEnabled() override;
 };
-
+*/

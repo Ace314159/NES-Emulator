@@ -38,7 +38,7 @@ void CPU::OAMDMA() {
 	if(this->mem.mapper->CPUcycleCount % 2 == 0) this->dummyRead();
 	this->dummyRead();
 
-	uint16_t page = this->mem.apuRegisters[0x14] << 8;
+	uint16_t page = this->mem.ppu.OAMDMA << 8;
 	for(int i = 0; i < 0x100; i++) {
 		uint8_t val = this->getMem(page | i);
 		this->setMem(0x2004, val);

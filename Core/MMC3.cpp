@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "MMC3.h"
 
-
+/*
 bool MMC3::canWriteRAM8(uint16_t addr) {
 	return (this->WRAMProtect & 0x80) && addr < 0x8000; // To avoid compatibility issues with MMC6
 }
@@ -168,4 +168,4 @@ uint16_t MMC3::getCHRBankSize(uint16_t addr) {
 
 bool MMC3::WRAMEnabled() {
 	return true; // To avoid compatibility issues with MMC6
-}
+}*/

@@ -36,7 +36,6 @@
     <ClCompile Include="MMC3.cpp" />
     <ClCompile Include="NES.cpp" />
     <ClCompile Include="Noise.cpp" />
-    <ClCompile Include="NROM.cpp" />
     <ClCompile Include="Opcodes.cpp" />
     <ClCompile Include="PPU.cpp" />
     <ClCompile Include="Pulse.cpp" />
@@ -54,11 +53,15 @@
     <ClInclude Include="APU.h" />
     <ClInclude Include="Audio.h" />
     <ClInclude Include="BaseMapper.h" />
+    <ClInclude Include="BlankHandler.h" />
     <ClInclude Include="Channel.h" />
     <ClInclude Include="CNROM.h" />
+    <ClInclude Include="ControllerHandler.h" />
     <ClInclude Include="CPU.h" />
     <ClInclude Include="iNESHeader.h" />
+    <ClInclude Include="InternalRAMHandler.h" />
     <ClInclude Include="Memory.h" />
+    <ClInclude Include="MemoryHandler.h" />
     <ClInclude Include="MMC1.h" />
     <ClInclude Include="MMC3.h" />
     <ClInclude Include="NES.h" />

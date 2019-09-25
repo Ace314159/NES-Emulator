@@ -30,28 +30,26 @@ void NES::loadRom(const fs::path& romFilePath) {
 #endif
 	this->mem.mapper = BaseMapper::getMapper(header);
 
-	this->mem.PRG.resize(header.prgRomSize * 0x4000);
-	if(header.chrRomSize > 0) this->mem.CHR.resize(header.chrRomSize * 0x2000);
-	else this->mem.CHR.resize(0x2000); // Otherwise initializes 8K of CHR RAM
-	romData.read(this->mem.PRG.data(), header.prgRomSize * 0x4000); // PRG
-	romData.read(this->mem.CHR.data(), header.chrRomSize * 0x2000); // CHR
+	romData.read(this->mem.mapper->PRG.data(), header.prgRomSize * 0x4000); // PRG
+	romData.read(this->mem.mapper->CHR.data(), header.chrRomSize * 0x2000); // CHR
 
+	this->mem.setMemoryHandlers();
 
 	// Set the PC to the memory address at the RESET vector location (0xFFFC/D)
 	this->cpu.PC = this->mem.getRAM8(0xFFFC) | (this->mem.getRAM8(0xFFFD) << 8);
 }
 
 void NES::handleInput() {
-	if(this->cpu.mem.apuRegisters[0x16] & 0x01) {
-		this->cpu.mem.buttons1[0] = glfwGetKey(this->ppu.window.window, GLFW_KEY_A) == GLFW_PRESS;
-		this->cpu.mem.buttons1[1] = glfwGetKey(this->ppu.window.window, GLFW_KEY_B) == GLFW_PRESS;
-		this->cpu.mem.buttons1[2] = glfwGetKey(this->ppu.window.window, GLFW_KEY_E) == GLFW_PRESS;
-		this->cpu.mem.buttons1[3] = glfwGetKey(this->ppu.window.window, GLFW_KEY_T) == GLFW_PRESS;
-		this->cpu.mem.buttons1[4] = glfwGetKey(this->ppu.window.window, GLFW_KEY_UP) == GLFW_PRESS;
-		this->cpu.mem.buttons1[5] = glfwGetKey(this->ppu.window.window, GLFW_KEY_DOWN) == GLFW_PRESS;
-		this->cpu.mem.buttons1[6] = glfwGetKey(this->ppu.window.window, GLFW_KEY_LEFT) == GLFW_PRESS;
-		this->cpu.mem.buttons1[7] = glfwGetKey(this->ppu.window.window, GLFW_KEY_RIGHT) == GLFW_PRESS;
-		this->cpu.mem.buttons1Index = 0;
+	if(this->mem.controllerHandler.poll) {
+		this->mem.controllerHandler.buttons1[0] = glfwGetKey(this->ppu.window.window, GLFW_KEY_A) == GLFW_PRESS;
+		this->mem.controllerHandler.buttons1[1] = glfwGetKey(this->ppu.window.window, GLFW_KEY_B) == GLFW_PRESS;
+		this->mem.controllerHandler.buttons1[2] = glfwGetKey(this->ppu.window.window, GLFW_KEY_E) == GLFW_PRESS;
+		this->mem.controllerHandler.buttons1[3] = glfwGetKey(this->ppu.window.window, GLFW_KEY_T) == GLFW_PRESS;
+		this->mem.controllerHandler.buttons1[4] = glfwGetKey(this->ppu.window.window, GLFW_KEY_UP) == GLFW_PRESS;
+		this->mem.controllerHandler.buttons1[5] = glfwGetKey(this->ppu.window.window, GLFW_KEY_DOWN) == GLFW_PRESS;
+		this->mem.controllerHandler.buttons1[6] = glfwGetKey(this->ppu.window.window, GLFW_KEY_LEFT) == GLFW_PRESS;
+		this->mem.controllerHandler.buttons1[7] = glfwGetKey(this->ppu.window.window, GLFW_KEY_RIGHT) == GLFW_PRESS;
+		this->mem.controllerHandler.buttons1Index = 0;
 	}
 }
 

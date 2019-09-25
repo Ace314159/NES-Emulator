@@ -1,9 +1,15 @@
 #pragma once
 
 #include "iNESHeader.h"
+#include "MemoryHandler.h"
 
 
-class BaseMapper {
+class BaseMapper : public MemoryHandler {
+private:
+	struct MemoryLocation {
+		uint8_t* data;
+		bool canWrite;
+	};
 public:
 	BaseMapper(iNESHeader header);
 
@@ -11,10 +17,20 @@ public:
 	enum class NametableMirroringType { HORIZONTAL = 0, VERTICAL = 1, ONE_A = 2, ONE_B = 3, FOUR = 4};
 	NametableMirroringType nametableMirroringType;
 
+	// ROM
+	std::vector<uint8_t> PRG; // CPU 0x8000 - 0xFFFF
+	std::vector<uint8_t> CHR; // PPU 0x0000 - 0x1FFF
+	// RAM
+	std::array<MemoryHandler*, 0x10000> RAMHandlers;
+	std::array<uint8_t, 0x2000> WRAM; // CPU 0x6000 - 0x7FFF
+	// Pointers
+	std::array<MemoryLocation, 0xBFE0> RAMPtrs;  // CPU 0x4020 - 0xFFFF
+	std::array<MemoryLocation, 0x4000> VRAMPtrs; // PPU 0x0000 - 0x3FFF
+	uint8_t temp; // Used when nothing should be changed
+
 	// VRAM
-	std::array<uint8_t, 0x1000> nametables;     // 0x2000 - 0x2FFF
-	std::array<uint8_t*, 0x1000> nametablePtrs; // 0x2000 - 0x2FFF
-	std::array<uint8_t, 0x0020> palette{};      // 0x3F00 - 0x3F1F
+	std::array<uint8_t, 0x1000> nametables; // 0x2000 - 0x2FFF
+	std::array<uint8_t, 0x001C> palette{};  // 0x3F00 - 0x3F1F
 
 	// Useful Variables
 	unsigned int CPUcycleCount = 0;
@@ -23,15 +39,13 @@ public:
 
 
 	// Useful Functions
-	virtual bool canWriteRAM8(uint16_t addr) = 0;
-	virtual void wroteRAM8(uint16_t addr, uint8_t data) = 0;
+	virtual uint8_t read(uint16_t addr) = 0;
+	virtual void write(uint16_t addr, uint8_t data) = 0;
 	virtual void setPPUBusAddress(uint16_t addr, int cycleNum) {};
-	virtual uint8_t getPRGBank(uint16_t& addr) = 0; // Is reference in order to offset addr when accessing PRG ROM
-	virtual uint16_t getPRGBankSize() = 0;
-	virtual uint8_t getCHRBank(uint16_t& addr) = 0; // Is reference in order to offset addr when accessing CHR
-	virtual uint16_t getCHRBankSize(uint16_t addr) = 0;
-	virtual bool WRAMEnabled() = 0;
 	
+	void setRAMHandlers(uint16_t startAddr, uint16_t endAddr, MemoryHandler& memoryHandler);
+	void setCPUMapping(uint16_t startAddr, uint16_t endAddr, uint8_t* startPtr, bool canWrite);
+	void setCHRMapping(uint16_t startAddr, uint16_t endAddr, uint8_t* startPtr, bool canWrite);
 	void setNametableMirroringType(NametableMirroringType type);
 	static std::unique_ptr<BaseMapper> getMapper(iNESHeader header);
 };

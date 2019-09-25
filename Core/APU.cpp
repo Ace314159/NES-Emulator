@@ -1,4 +1,5 @@
 #include "stdafx.h"
+
 #include "APU.h"
 #include "CPU.h"
 
@@ -37,49 +38,75 @@ void APU::emulateCycle() {
 
 
 // Useful Functions
-/*void APU::registerRead(uint16_t addr) {
+uint8_t APU::read(uint16_t addr) {
+	uint8_t returnVal;
 	switch(addr) {
 	case 0x4015:
+		returnVal = (this->mem.mapper->IRQCalled << 6) | ((this->noise.lengthCounter > 0) << 3) |
+			((this->triangle.lengthCounter > 0) << 2) | ((this->pulse2.lengthCounter > 0) << 1) |
+			((this->pulse1.lengthCounter > 0) << 0);
 		this->mem.mapper->IRQCalled = false;
+		return returnVal;
+		break;
+	case 0x4017:
+		return this->frameCounter;
+		break;
+	default:
+		return this->registers[addr - 0x4000];
 		break;
 	}
-}*/
+}
 
-void APU::registerWritten(uint16_t addr) {
+void APU::write(uint16_t addr, uint8_t data) {
 	switch(addr) {
 	// Pulse 1
 	case 0x4001:
+		this->registers[0x1] = data;
 		this->pulse1.sweepReloadFlag = true;
 		break;
 	case 0x4003:
+		this->registers[0x3] = data;
 		this->pulse1.dutyCyclePositon = 0;
 		this->pulse1.envelopeStartFlag = true;
 		this->pulse1.loadLengthCounter();
 		break;
 	// Pulse 2
 	case 0x4005:
+		this->registers[0x5] = data;
 		this->pulse2.sweepReloadFlag = true;
 		break;
 	case 0x4007:
+		this->registers[0x7] = data;
 		this->pulse2.dutyCyclePositon = 0;
 		this->pulse2.envelopeStartFlag = true;
 		this->pulse2.loadLengthCounter();
 		break;
 	// Triangle
 	case 0x400B:
+		this->registers[0xB] = data;
 		this->triangle.linearCounterReloadFlag = true;
 		this->triangle.loadLengthCounter();
 		break;
 	// Noise
 	case 0x400F:
+		this->registers[0xF] = data;
 		this->noise.envelopeStartFlag = true;
 		this->noise.loadLengthCounter();
 		break;
 	case 0x4015:
+		this->status = (this->status & ~0x1F) | (data & 0x1F);
 		this->pulse1.enabled = (this->status >> 0) & 0x01;
 		this->pulse2.enabled = (this->status >> 1) & 0x01;
 		this->triangle.enabled = (this->status >> 2) & 0x01;
 		this->noise.enabled = (this->status >> 3) & 0x01;
+		break;
+	case 0x4017:
+		this->newFrameCounter = data;
+		// Reset after 3 or 4 CPU clock cycles after write
+		this->resetFrameCounterTime = 3 + (this->mem.mapper->CPUcycleCount % 2);
+		break;
+	default:
+		this->registers[addr - 0x4000] = data;
 		break;
 	}
 }

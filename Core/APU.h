@@ -1,12 +1,14 @@
 #pragma once
 
 #include "Memory.h"
+#include "MemoryHandler.h"
+
 #include "Pulse.h"
 #include "Triangle.h"
 #include "Noise.h"
 
 
-class APU {
+class APU : public MemoryHandler {
 public:
 	APU(Memory& m);
 	const Sint16 globalVolumeFactor = 5000;
@@ -15,8 +17,9 @@ public:
 	Audio audio{};
 
 	// Registers
-	uint8_t& status = mem.apuRegisters[0x15];
-	uint8_t& frameCounter = mem.apuRegisters[0x17];
+	std::array<uint8_t, 0x0014> registers; // 0x4000 - 0x4013
+	uint8_t status = 0; // 0x4015
+	uint8_t frameCounter = 0; // 0x4017
 
 	// Frame Counter
 	int resetFrameCounterTime = -1;
@@ -26,16 +29,16 @@ public:
 	unsigned int frameCounterCycle = 10;
 
 	// Channels
-	Pulse pulse1{mem.apuRegisters.data() + 0x0, false};
-	Pulse pulse2{mem.apuRegisters.data() + 0x4, true};
-	Triangle triangle{mem.apuRegisters.data() + 0x8};
-	Noise noise{mem.apuRegisters.data() + 0xC};
+	Pulse pulse1{registers.data() + 0x0, false};
+	Pulse pulse2{registers.data() + 0x4, true};
+	Triangle triangle{registers.data() + 0x8};
+	Noise noise{registers.data() + 0xC};
 
 	void emulateCycle();
 
 	// Useful Functions
-	// void registerRead(uint16_t addr);
-	void registerWritten(uint16_t addr);
+	virtual uint8_t read(uint16_t addr) override;
+	virtual void write(uint16_t addr, uint8_t data) override;
 	void emulateFrameCounter();
 	void quarterFrame();
 	void halfFrame();

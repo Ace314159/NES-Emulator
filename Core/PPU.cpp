@@ -1,4 +1,4 @@
-	#include "stdafx.h"
+#include "stdafx.h"
 #include "PPU.h"
 
 #include "CPU.h"
@@ -6,12 +6,13 @@
 
 PPU::PPU(Memory& m) : mem(m) { }
 
-uint8_t PPU::registerRead(uint16_t addr) {
+uint8_t PPU::read(uint16_t addr) {
+	addr &= 0xE007;
 	uint8_t returnVal;
 	switch(addr) {
 	case 0x2002: // STATUS
 		this->onSecondWrite = false; // Reset address latch
-		this->STATUS = (this->STATUS & ~0x1F) | (this->mem.cpuPpuBus & 0x1F);
+		this->STATUS = (this->STATUS & ~0x1F) | (this->cpuPpuBus & 0x1F);
 		returnVal = this->STATUS;
 		this->STATUS &= ~0x80; // Clear VBlank Flag
 		if(this->scanlineNum == 241 && this->cycleNum < 3) {
@@ -28,40 +29,50 @@ uint8_t PPU::registerRead(uint16_t addr) {
 		break;
 	case 0x2007: // DATA
 		if(this->busAddr <= 0x3EFF) {
-			returnVal = this->mem.ppuDATAReadBuffer;
-			this->mem.ppuDATAReadBuffer = this->mem.getVRAM8(this->busAddr);
+			returnVal = this->DATAReadBuffer;
+			this->DATAReadBuffer = this->mem.getVRAM8(this->busAddr);
 		} else {
-			returnVal = this->mem.getPaletteLoc(this->busAddr - 0x3F00);
-			this->mem.ppuDATAReadBuffer = this->mem.getVRAM8(this->currentVramAddr & ~0x1000);
+			returnVal = this->mem.getVRAM8(this->busAddr);
+			this->DATAReadBuffer = this->mem.getVRAM8(this->currentVramAddr & ~0x1000);
 		}
 		this->incrementVramAddr();
 		return returnVal;
 		break;
 	default:
-		return this->mem.ppuRegisters[addr - 0x2000];
+		return this->registers[addr - 0x2000];
 		break;
 	}
 }
 
-void PPU::registerWritten(uint16_t addr, uint8_t oldValue) {
+void PPU::write(uint16_t addr, uint8_t data) {
+	if(addr != 0x4014) {
+		addr &= 0xE007;
+		this->cpuPpuBus = data;
+		if(addr == 0x2002 || (addr == 0x2004 && this->scanlineNum < 240 && this->isRendering()))
+			return;
+		// Set low 5 bits of PPUSTATUS - TODO: Find better way
+		this->STATUS = (this->STATUS & ~0x1F) | (this->cpuPpuBus & 0x1F);
+	}
+
 	switch(addr) {
 	case 0x2000: // CTRL
-		if(CTRL == 0x08)
-			std::cout << "";
 		// t: ...BA.. ........ = d: ......BA
-		this->tempVramAddr = (this->tempVramAddr & ~0xC00) | (this->CTRL & 0x3) << 10;
-		if(!(oldValue & 0x80) && (this->CTRL & 0x80) && (this->STATUS & 0x80) && 
+		this->tempVramAddr = (this->tempVramAddr & ~0xC00) | (data & 0x3) << 10;
+		if(!(this->CTRL & 0x80) && (data & 0x80) && (this->STATUS & 0x80) && 
 			(this->scanlineNum != -1 || this->cycleNum != 0))
 			this->mem.NMICalled = true;
-		if(this->scanlineNum == 241 && this->cycleNum < 3 && !(this->CTRL & 0x80))
+		if(this->scanlineNum == 241 && this->cycleNum < 3 && !(data & 0x80))
 			this->mem.NMICalled = false;
+		this->CTRL = data;
 		break;
 	case 0x2004: // OAM DATA
+		this->OAMDATA = data;
 		if(this->OAMADDR % 4 == 2) this->OAMDATA &= 0xE3;
 		this->mem.OAM[this->OAMADDR++] = this->OAMDATA;
 		this->OAMADDR %= 0x100;
 		break;
 	case 0x2005: // SCROLL
+		this->SCROLL = data;
 		if(this->onSecondWrite) {
 			// t: CBA..HG FED..... = d: HGFEDCBA
 			// Gets low 3 bits and [3-7]
@@ -76,6 +87,7 @@ void PPU::registerWritten(uint16_t addr, uint8_t oldValue) {
 		this->onSecondWrite = !this->onSecondWrite;
 		break;
 	case 0x2006: // ADDR
+		this->ADDR = data;
 		if(this->onSecondWrite) {
 			// Sets low 8 bits to the bits in ADDR
 			this->tempVramAddr = (this->tempVramAddr & ~0xFF) | this->ADDR;
@@ -88,6 +100,7 @@ void PPU::registerWritten(uint16_t addr, uint8_t oldValue) {
 		this->onSecondWrite = !this->onSecondWrite;
 		break;
 	case 0x2007: // DATA
+		this->DATA = data;
 		if(this->busAddr <= 0x3EFF || this->scanlineNum >= 240 || !this->isRendering()) {
 			this->mem.setVRAM8(this->busAddr, this->DATA);
 		} else {
@@ -96,7 +109,11 @@ void PPU::registerWritten(uint16_t addr, uint8_t oldValue) {
 		this->incrementVramAddr();
 		break;
 	case 0x4014: // OAM DMA
+		this->OAMDMA = data;
 		this->mem.cpu.OAMDMA();
+		break;
+	default:
+		this->registers[addr - 0x2000] = data;
 		break;
 	}
 }
@@ -248,11 +265,11 @@ void PPU::fetchBGData() {
 		}
 		break;
 	case 2: // NT Byte
-		this->tileNum = mem.getNametableLoc(this->getNTAddr());
+		this->tileNum = this->mem.getVRAM8(this->getNTAddr());
 		break;
 	case 4: // AT Byte
 		{
-		uint8_t atByte = mem.getNametableLoc(this->getATAddr());
+		uint8_t atByte = this->mem.getVRAM8(this->getATAddr());
 		uint8_t yBit = (v & 0x40) >> 5; // Bit 1 of coarse y in pos 1
 		uint8_t xBit = (v & 0x2) >> 1; // Bit 1 of carse x
 		// yx is used to select the corresponding 2 bits from the attribute byte
@@ -260,10 +277,10 @@ void PPU::fetchBGData() {
 		}
 		/*break; - Fixes MMC3 IRQ Timing
 	case 6: // Low BG Tile Byte*/
-		this->lowTileByte = mem.getCHRLoc(bgPage | (this->tileNum << 4) | fineY);
+		this->lowTileByte = this->mem.getVRAM8(bgPage | (this->tileNum << 4) | fineY);
 		break;
 	case 0: // High BG Tile Byte
-		this->highTileByte = mem.getCHRLoc(bgPage | (this->tileNum << 4) | 0x8 | fineY);
+		this->highTileByte = this->mem.getVRAM8(bgPage | (this->tileNum << 4) | 0x8 | fineY);
 		break;
 	}
 }
@@ -315,23 +332,23 @@ void PPU::fetchSpriteData() { // Sprite Fetches
 			else // Bottom Half
 				this->tileNum = this->secondaryOAM[spriteNum * 4 + 1] | 0x01;
 		} else this->tileNum = this->secondaryOAM[spriteNum * 4 + 1];
-		mem.getNametableLoc(this->getNTAddr());
+		this->mem.getVRAM8(this->getNTAddr());
 		break;
 	case 3: // Sprite Attribute
 		this->spriteAttrs[spriteNum] = this->secondaryOAM[spriteNum * 4 + 2];
 		break;
 	case 4: // Sprite X
-		mem.getNametableLoc(this->getATAddr());
+		this->mem.getVRAM8(this->getATAddr());
 		this->spriteXs[spriteNum] = this->secondaryOAM[spriteNum * 4 + 3];
 		/*break; - Fixes MMC3 IRQ Timing
 	case 6: // Low Sprite Tile Byte*/
-		this->lowTileByte = mem.getCHRLoc(spritePage | (this->tileNum << 4) | fineY);
+		this->lowTileByte = mem.getVRAM8(spritePage | (this->tileNum << 4) | fineY);
 		if(this->spriteAttrs[spriteNum] & 0x40) 
 			this->lowTileByte = this->BitReverseTable[this->lowTileByte];
 		this->lowSpriteShiftRegs[spriteNum] = this->lowTileByte;
 		break;
 	case 7: // High Sprite Tile Byte
-		this->highTileByte = mem.getCHRLoc(spritePage | (this->tileNum << 4) | 0x8 | fineY);
+		this->highTileByte = mem.getVRAM8(spritePage | (this->tileNum << 4) | 0x8 | fineY);
 		if(this->spriteAttrs[spriteNum] & 0x40)
 			this->highTileByte = this->BitReverseTable[this->highTileByte];
 		this->highSpriteShiftRegs[spriteNum] = this->highTileByte;
@@ -414,32 +431,33 @@ void PPU::incrementScrollY() {
 	}
 }
 
+// From http://wiki.nesdev.com/w/index.php/PPU_scrolling#Tile_and_attribute_fetching
 uint16_t PPU::getNTAddr() {
-	return this->currentVramAddr & 0x0FFF;
+	return 0x2000 | (this->currentVramAddr & 0x0FFF);
 }
 
+// From http://wiki.nesdev.com/w/index.php/PPU_scrolling#Tile_and_attribute_fetching
 uint16_t PPU::getATAddr() {
-	return 0x03C0 | (this->currentVramAddr & 0x0C00) | ((this->currentVramAddr >> 4) & 0x38) | 
+	return 0x23C0 | (this->currentVramAddr & 0x0C00) | ((this->currentVramAddr >> 4) & 0x38) | 
 		((this->currentVramAddr >> 2) & 0x07);
 }
 
 uint8_t PPU::getBGColor(uint8_t paletteNum, uint8_t colorNum) {
 	uint8_t color;
 	if(this->isRenderingBG()) {
-		if(colorNum == 0) color = mem.getPaletteLoc(0);
-		else color = mem.getPaletteLoc((paletteNum << 2) | colorNum);
+		if(colorNum == 0) color = this->mem.getVRAM8(0x3F00);
+		else color = this->mem.getVRAM8(0x3F00 | (paletteNum << 2) | colorNum);
 	} else {
-		if(this->currentVramAddr > 0x3F00 && this->currentVramAddr < 0x4000) 
-			color = mem.getPaletteLoc(this->currentVramAddr - 0x3F00);
-		else color = mem.getPaletteLoc(0);
+		if(this->currentVramAddr > 0x3F00 && this->currentVramAddr < 0x4000)
+			color = this->mem.getVRAM8(this->currentVramAddr);
+		else color = this->mem.getVRAM8(0x3F00);
 	}
 	return color;
 }
 
 uint8_t PPU::getSpriteColor(uint8_t paletteNum, uint8_t colorNum) {
 	assert(colorNum != 0);
-	uint8_t color = mem.getPaletteLoc(0x0010 | (paletteNum << 2) | colorNum);
-	return color;
+	return this->mem.getVRAM8(0x3F10 | (paletteNum << 2) | colorNum);
 }
 
 void PPU::setPaletteTable(Color* paletteData) {

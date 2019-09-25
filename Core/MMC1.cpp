@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "MMC1.h"
 
-
+/*
 bool MMC1::canWriteRAM8(uint16_t addr) {
 	return false;
 }
@@ -83,4 +83,4 @@ uint16_t MMC1::getCHRBankSize(uint16_t addr) {
 
 bool MMC1::WRAMEnabled() {
 	return !(this->PRGBank >> 4);
-}
+}*/

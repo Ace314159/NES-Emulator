@@ -3,8 +3,9 @@
 
 #include "Memory.h"
 #include "Window.h"
+#include "MemoryHandler.h"
 
-class PPU {
+class PPU : public MemoryHandler {
 public:
 	PPU(Memory& m);
 	std::array<Color, 0x40> paletteTable{}; // Not part of RAM
@@ -13,15 +14,16 @@ public:
 	Window window{};
 
 	// Registers
-	uint8_t& CTRL = mem.ppuRegisters[0x00] = 0;
-	uint8_t& MASK = mem.ppuRegisters[0x01] = 0;
-	uint8_t& STATUS = mem.ppuRegisters[0x02] = 0;
-	uint8_t& OAMADDR = mem.ppuRegisters[0x03] = 0;
-	uint8_t& OAMDATA = mem.ppuRegisters[0x04];
-	uint8_t& SCROLL = mem.ppuRegisters[0x05] = 0;
-	uint8_t& ADDR = mem.ppuRegisters[0x06] = 0;
-	uint8_t& DATA = mem.ppuRegisters[0x07] = 0;
-	uint8_t& OAMDMA = mem.apuRegisters[0x14];
+	std::array<uint8_t, 0x0008> registers{}; // 0x2000 - 0x2007
+	uint8_t& CTRL = registers[0x00] = 0;
+	uint8_t& MASK = registers[0x01] = 0;
+	uint8_t& STATUS = registers[0x02] = 0;
+	uint8_t& OAMADDR = registers[0x03] = 0;
+	uint8_t& OAMDATA = registers[0x04];
+	uint8_t& SCROLL = registers[0x05] = 0;
+	uint8_t& ADDR = registers[0x06] = 0;
+	uint8_t& DATA = registers[0x07] = 0;
+	uint8_t OAMDMA;
 
 	// Useful variables
 	int scanlineNum = -1;
@@ -64,9 +66,11 @@ public:
 	bool oddFrame = true;
 	uint8_t OAMDMAStartAddr;
 	uint16_t busAddress;
+	uint8_t cpuPpuBus;
+	uint8_t DATAReadBuffer;
 
-	uint8_t registerRead(uint16_t addr);
-	void registerWritten(uint16_t addr, uint8_t oldValue = 0);
+	virtual uint8_t read(uint16_t addr) override;
+	virtual void write(uint16_t addr, uint8_t data) override;
 	void emulateDot();
 
 	// Useful Functions

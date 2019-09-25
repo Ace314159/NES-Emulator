@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "UxROM.h"
 
-
+/*
 bool UxROM::canWriteRAM8(uint16_t addr) {
 	return false;
 }
@@ -34,4 +34,4 @@ uint16_t UxROM::getCHRBankSize(uint16_t addr) {
 
 bool UxROM::WRAMEnabled() {
 	return false;
-}
+}*/

@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "CNROM.h"
 
-
+/*
 bool CNROM::canWriteRAM8(uint16_t addr) {
 	return false;
 }
@@ -30,4 +30,4 @@ uint16_t CNROM::getCHRBankSize(uint16_t addr) {
 
 bool CNROM::WRAMEnabled() {
 	return false;
-}
+}*/

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Header Files">
@@ -58,9 +58,6 @@
       <Filter>Source Files\PPU</Filter>
     </ClCompile>
     <ClCompile Include="MMC1.cpp">
-      <Filter>Source Files\Memory\Mappers</Filter>
-    </ClCompile>
-    <ClCompile Include="NROM.cpp">
       <Filter>Source Files\Memory\Mappers</Filter>
     </ClCompile>
     <ClCompile Include="Memory.cpp">
@@ -167,8 +164,20 @@
     <ClInclude Include="CNROM.h">
       <Filter>Header Files\Memory\Mappers</Filter>
     </ClInclude>
+    <ClInclude Include="MemoryHandler.h">
+      <Filter>Header Files\Memory</Filter>
+    </ClInclude>
     <ClInclude Include="MMC3.h">
       <Filter>Header Files\Memory\Mappers</Filter>
+    </ClInclude>
+    <ClInclude Include="InternalRAMHandler.h">
+      <Filter>Header Files\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="ControllerHandler.h">
+      <Filter>Header Files\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="BlankHandler.h">
+      <Filter>Header Files\Memory</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

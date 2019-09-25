@@ -2,7 +2,7 @@
 
 #include "BaseMapper.h"
 
-
+/*
 class MMC1 : public BaseMapper {
 private:
 	// Registers
@@ -26,4 +26,4 @@ public:
 	uint16_t getCHRBankSize(uint16_t addr) override;
 	bool WRAMEnabled() override;
 };
-
+*/

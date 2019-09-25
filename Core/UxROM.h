@@ -2,7 +2,7 @@
 
 #include "BaseMapper.h"
 
-
+/*
 class UxROM : public BaseMapper {
 private:
 	// Registers
@@ -17,5 +17,5 @@ public:
 	uint8_t getCHRBank(uint16_t& addr) override;
 	uint16_t getCHRBankSize(uint16_t addr) override;
 	bool WRAMEnabled() override;
-};
+};*/
 
