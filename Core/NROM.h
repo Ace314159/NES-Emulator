@@ -6,11 +6,9 @@
 class NROM : public BaseMapper {
 public:
 	NROM(iNESHeader header) : BaseMapper(header) {
-		this->setCPUMapping(0x6000, 0x7FFF, this->WRAM.data(), true);
-		this->setCPUMapping(0x8000, 0xBFFF, this->PRG.data(), false);
-		this->setCPUMapping(0xC000, 0xFFFF, &this->PRG[(this->header.prgRomSize == 1) ? 0 : 0x4000], false);
-
-		this->setCHRMapping(0x0000, 0x1FFF, this->CHR.data(), false);
+		this->setWRAMEnabled(true);
+		this->setPRGMapping({0, -1});
+		this->setCHRMapping({0});
 	};
 
 	virtual uint8_t read(uint16_t addr) override {
@@ -18,7 +16,7 @@ public:
 	};
 
 	virtual void write(uint16_t addr, uint8_t data) override {
-		if(this->RAMPtrs[addr - 0x4020].canWrite) *this->RAMPtrs[addr].data = data;
+		if(this->RAMPtrs[addr - 0x4020].canWrite) *this->RAMPtrs[addr - 0x4020].data = data;
 	};
 };
 

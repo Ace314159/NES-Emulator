@@ -20,6 +20,10 @@ public:
 	// ROM
 	std::vector<uint8_t> PRG; // CPU 0x8000 - 0xFFFF
 	std::vector<uint8_t> CHR; // PPU 0x0000 - 0x1FFF
+	int PRGBankSize;
+	int CHRBankSize;
+	int numPRGBanks;
+	int numCHRBanks;
 	// RAM
 	std::array<MemoryHandler*, 0x10000> RAMHandlers;
 	std::array<uint8_t, 0x2000> WRAM; // CPU 0x6000 - 0x7FFF
@@ -44,9 +48,20 @@ public:
 	virtual void setPPUBusAddress(uint16_t addr, int cycleNum) {};
 	
 	void setRAMHandlers(uint16_t startAddr, uint16_t endAddr, MemoryHandler& memoryHandler);
+
 	void setCPUMapping(uint16_t startAddr, uint16_t endAddr, uint8_t* startPtr, bool canWrite);
 	void setCHRMapping(uint16_t startAddr, uint16_t endAddr, uint8_t* startPtr, bool canWrite);
+	
+	void setPRGMapping(std::initializer_list<int> banks);
+	void setCHRMapping(std::initializer_list<int> banks);
+
+	void setPRGBank(int memIndex, int bankIndex);
+	void setCHRBank(int memIndex, int bankIndex);
+
+	void setWRAMEnabled(bool enabled);
+
 	void setNametableMirroringType(NametableMirroringType type);
+
 	static std::unique_ptr<BaseMapper> getMapper(iNESHeader header);
 };
 

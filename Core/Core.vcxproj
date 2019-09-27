@@ -32,7 +32,6 @@
     </ClCompile>
     <ClCompile Include="iNESHeader.cpp" />
     <ClCompile Include="Memory.cpp" />
-    <ClCompile Include="MMC1.cpp" />
     <ClCompile Include="MMC3.cpp" />
     <ClCompile Include="NES.cpp" />
     <ClCompile Include="Noise.cpp" />

@@ -9,10 +9,9 @@ CPU::CPU(Memory& m) : mem(m) {}
 
 void CPU::emulateInstr() {
 //#ifdef _DEBUG
-	if(this->mem.mapper->CPUcycleCount == 265629)
+	/*if(this->mem.mapper->CPUcycleCount == 180402)
 		std::cout << "";
-	int c = mem.ppu.cycleNum, s = mem.ppu.scanlineNum;
-	/*printf("%04X  A:%02X X:%02X Y:%02X P:%02X SP:%02X CYC:%-3d SL:%-3d  %u\n", PC,
+	printf("%04X  A:%02X X:%02X Y:%02X P:%02X SP:%02X CYC:%-3d SL:%-3d  %u\n", PC,
 		A, X, Y, P.getByte() & ~0x20, S, this->mem.ppu.cycleNum, this->mem.ppu.scanlineNum,
 		this->mem.mapper->CPUcycleCount);
 	/*printf("%04X  %02X    A:%02X X:%02X Y:%02X P:%02X SP:%02X CYC:%3d SL:%1d\n", PC, mem.getRAM8(PC),

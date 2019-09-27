@@ -3,15 +3,15 @@
 #include "BaseMapper.h"
 
 #include "NROM.h"
-/*#include "MMC1.h"
+#include "MMC1.h"
 #include "UxROM.h"
 #include "CNROM.h"
-#include "MMC3.h"*/
+#include "MMC3.h"
 
 
 BaseMapper::BaseMapper(iNESHeader header) : header(header) {
 	this->PRG.resize(header.prgRomSize * 0x4000);
-	this->CHR.resize((header.chrRomSize == 0) ? 1 : header.chrRomSize * 0x2000);
+	this->CHR.resize((header.chrRomSize == 0) ? 0x2000 : header.chrRomSize * 0x2000);
 
 	auto type = static_cast<NametableMirroringType>(header.nametableMirroringType);
 	this->setNametableMirroringType(type);
@@ -19,7 +19,14 @@ BaseMapper::BaseMapper(iNESHeader header) : header(header) {
 	// Undefined RAM
 	for(uint16_t addr = 0x4020; addr < 0x6000; addr++) 
 		this->RAMPtrs[addr - 0x4020] = {&this->temp, false};
+	// WRAM
+	this->setCPUMapping(0x6000, 0x7FFF, this->WRAM.data(), false);
 
+
+	// CHR RAM
+	if(this->header.chrRomSize == 0) {
+		this->setCHRMapping(0x0000, 0x1FFF, this->CHR.data(), true);
+	}
 	// Palette
 	for(uint16_t offset = 0; offset < 0x100; offset += 0x20) {
 		this->VRAMPtrs[0x3F00 + offset] = {&this->palette[0], true};
@@ -37,10 +44,10 @@ std::unique_ptr<BaseMapper> BaseMapper::getMapper(iNESHeader header) {
 	case 0x00:
 		return std::make_unique<NROM>(header);
 		break;
-	/*case 0x01:
+	case 0x01:
 		return std::make_unique<MMC1>(header);
 		break;
-	case 0x02:
+	/*case 0x02:
 		return std::make_unique<UxROM>(header);
 		break;
 	case 0x03:
@@ -59,6 +66,7 @@ void BaseMapper::setRAMHandlers(uint16_t startAddr, uint16_t endAddr, MemoryHand
 	std::fill(this->RAMHandlers.begin() + startAddr, this->RAMHandlers.begin() + endAddr + 1, &memoryHandler);
 }
 
+
 void BaseMapper::setCPUMapping(uint16_t startAddr, uint16_t endAddr, uint8_t* startPtr, bool canWrite) {
 	for(uint32_t addr = startAddr; addr <= endAddr; addr++) {
 		this->RAMPtrs[addr - 0x4020] = {startPtr + addr - startAddr, canWrite};
@@ -69,6 +77,43 @@ void BaseMapper::setCHRMapping(uint16_t startAddr, uint16_t endAddr, uint8_t* st
 	for(uint32_t addr = startAddr; addr <= endAddr; addr++) {
 		this->VRAMPtrs[addr] = {startPtr + addr - startAddr, canWrite};
 	}
+}
+
+
+void BaseMapper::setPRGMapping(std::initializer_list<int> banks) {
+	this->PRGBankSize = 0x8000 / banks.size();
+	this->numPRGBanks = this->header.prgRomSize * 0x4000 / this->PRGBankSize;
+
+	int i = 0;
+	for(const int& bank : banks) this->setPRGBank(i++, bank);
+}
+
+void BaseMapper::setCHRMapping(std::initializer_list<int> banks) {
+	if(this->header.chrRomSize == 0) return; // CHR RAM
+	this->CHRBankSize = 0x2000 / banks.size();
+	this->numCHRBanks = this->header.chrRomSize * 0x2000 / this->CHRBankSize;
+
+	int i = 0;
+	for(const int& bank : banks) this->setCHRBank(i++, bank);
+}
+
+
+void BaseMapper::setPRGBank(int memIndex, int bankIndex) {
+	if(bankIndex < 0) bankIndex += this->numPRGBanks;
+	this->setCPUMapping(0x8000 + memIndex * this->PRGBankSize, 0x8000 + (memIndex + 1) * this->PRGBankSize - 1, 
+		&this->PRG[bankIndex * this->PRGBankSize], false);
+}
+
+void BaseMapper::setCHRBank(int memIndex, int bankIndex) {
+	if(bankIndex < 0) bankIndex += this->numCHRBanks;
+	this->setCHRMapping(memIndex * this->CHRBankSize, (memIndex + 1) * this->CHRBankSize - 1,
+		&this->CHR[bankIndex * this->CHRBankSize], false);
+}
+
+
+void BaseMapper::setWRAMEnabled(bool enabled) {
+	for(uint16_t addr = 0x6000; addr < 0x8000; addr++)
+		this->RAMPtrs[addr - 0x4020].canWrite = enabled;
 }
 
 

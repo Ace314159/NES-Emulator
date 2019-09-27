@@ -57,9 +57,6 @@
     <ClCompile Include="Window.cpp">
       <Filter>Source Files\PPU</Filter>
     </ClCompile>
-    <ClCompile Include="MMC1.cpp">
-      <Filter>Source Files\Memory\Mappers</Filter>
-    </ClCompile>
     <ClCompile Include="Memory.cpp">
       <Filter>Source Files\Memory</Filter>
     </ClCompile>

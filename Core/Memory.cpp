@@ -25,7 +25,7 @@ uint8_t Memory::getRAM8(uint16_t addr) {
 }
 
 void Memory::setRAM8(uint16_t addr, uint8_t data) {
-	return this->mapper->RAMHandlers[addr]->write(addr, data);
+	this->mapper->RAMHandlers[addr]->write(addr, data);
 }
 
 // PPU
@@ -34,5 +34,5 @@ uint8_t Memory::getVRAM8(uint16_t addr) {
 }
 
 void Memory::setVRAM8(uint16_t addr, uint8_t data) {
-	*this->mapper->VRAMPtrs[addr].data = data;
+	if(this->mapper->VRAMPtrs[addr].canWrite) *this->mapper->VRAMPtrs[addr].data = data;
 }
