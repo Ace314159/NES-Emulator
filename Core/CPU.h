@@ -69,36 +69,75 @@ public:
 	void setY(uint8_t val) { this->setReg(this->Y, val); };
 
 	// Addressing Modes
-	void implied();
-	void immediate();
-	void relative();
+	void implied() { this->dummyRead(); };
+	void immediate() { this->effectiveAddr = this->PC++; };
+	void relative() { this->immediate(); };
 	
-	void absolute();
-	void absoluteI(uint8_t& I);
-	void absoluteIR(uint8_t& I);
+	void absolute() { this->effectiveAddr = this->readWord(); };
+	void absoluteI(uint8_t& I) {
+		uint16_t baseAddr = this->readWord();
+		bool pageCrossed = this->pageCrossed(baseAddr, I);
+		this->getMem((baseAddr + I) - (pageCrossed ? 0x100 : 0));
+		this->effectiveAddr = baseAddr + I;
+	};
+	void absoluteIR(uint8_t& I) {
+		uint16_t baseAddr = this->readWord();
+		if(this->pageCrossed(baseAddr, I)) this->getMem((baseAddr + I) - 0x100);
+		this->effectiveAddr = baseAddr + I;
+	};
 	void absoluteX() { return this->absoluteI(this->X); }
 	void absoluteXR() { return this->absoluteIR(this->X); }
 	void absoluteY() { return this->absoluteI(this->Y); }
 	void absoluteYR() { return this->absoluteIR(this->Y); }
 	
-	void zeroPage();
-	void zeroPageI(uint8_t& I);
+	void zeroPage() { this->effectiveAddr = this->readByte(); };
+	void zeroPageI(uint8_t& I) {
+		uint16_t addr = this->readByte();
+		this->getMem(addr);
+		this->effectiveAddr = (addr + I) & 0xFF;
+	};
 	void zeroPageX() { return this->zeroPageI(this->X); }
 	void zeroPageY() { return this->zeroPageI(this->Y); }
 	
-	void indirectX();
-	void indirectY();
-	void indirectYR();
+	void indirectX() {
+		uint16_t baseAddr = this->readByte();
+		this->getMem(baseAddr);
+		baseAddr = (baseAddr + this->X) & 0xFF;
+
+		if(baseAddr == 0xFF) this->effectiveAddr = this->getMem(0xFF) | (this->getMem(0x00) << 8);
+		else this->effectiveAddr = this->readWord(baseAddr);
+	};
+	void indirectY() {
+		uint16_t baseAddr = this->readByte();
+
+		uint16_t effectiveAddr;
+		if(baseAddr == 0xFF) effectiveAddr = this->getMem(0xFF) | (this->getMem(0x00) << 8);
+		else effectiveAddr = this->readWord(baseAddr);
+
+		bool pageCrossed = this->pageCrossed(effectiveAddr, this->Y);
+		this->getMem(effectiveAddr + this->Y - (pageCrossed ? 0x100 : 0));
+		this->effectiveAddr = effectiveAddr + this->Y;
+	};
+	void indirectYR() {
+		uint16_t baseAddr = this->readByte();
+
+		uint16_t effectiveAddr;
+		if(baseAddr == 0xFF) effectiveAddr = this->getMem(0xFF) | (this->getMem(0x00) << 8);
+		else effectiveAddr = this->readWord(baseAddr);
+
+		if(this->pageCrossed(effectiveAddr, this->Y)) this->getMem(effectiveAddr + this->Y - 0x100);
+		this->effectiveAddr = effectiveAddr + this->Y;
+	};
 
 	// Flag Control
-	void flagN(uint8_t result);
-	void flagZ(uint8_t result);
-	void flagC(uint16_t result);
+	void flagN(uint8_t result) { this->P.N() = result & 0x80; };
+	void flagZ(uint8_t result) { this->P.Z() = result == 0; };
+	void flagC(uint16_t result) { this->P.C() = result & 0x100; };
 
 	// Stack Operations
-	void stackPush(uint8_t data);
+	void stackPush(uint8_t data) { this->setMem(this->S-- | (0x01 << 8), data); };
 	void stackPush(uint16_t data) { this->stackPush((uint8_t)(data >> 8)); this->stackPush((uint8_t)data);  }
-	uint8_t stackPull();
+	uint8_t stackPull() { return this->getMem(++this->S | (0x01 << 8)); };
 	uint16_t stackPullWord() { return this->stackPull() | (this->stackPull() << 8); };
 
 	// Operations
