@@ -16,9 +16,9 @@ void iNESHeader::init(const std::array<uint8_t, 16>& headerData) {
 	// Verify if ROM is valid
 	if(!!memcmp(NES, "\x4E\x45\x53\x1A", 4) || !!memcmp(z, "\x0\x0\x0\x0\x0", 5)) {
 #ifdef _DEBUG
-		std::cout << "NES is " << this->NES << std::endl;
+		std::cout << "NES is " << NES << std::endl;
 		std::cout << "0 is ";
-		for(int i = 0; i < 5; i++) std::cout << (int)this->z[i] << " ";
+		for(int i = 0; i < 5; i++) std::cout << (int)z[i] << " ";
 		std::cout << std::endl;
 #endif
 		throw std::runtime_error("Corrupted ROM!");

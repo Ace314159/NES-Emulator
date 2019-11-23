@@ -30,9 +30,11 @@ void Memory::setRAM8(uint16_t addr, uint8_t data) {
 
 // PPU
 uint8_t Memory::getVRAM8(uint16_t addr) {
+	if(addr < 0x3000) this->ppu.setBusAddr(addr);
 	return *this->mapper->VRAMPtrs[addr].data;
 }
 
 void Memory::setVRAM8(uint16_t addr, uint8_t data) {
+	if(addr < 0x3000) this->ppu.setBusAddr(addr);
 	if(this->mapper->VRAMPtrs[addr].canWrite) *this->mapper->VRAMPtrs[addr].data = data;
 }

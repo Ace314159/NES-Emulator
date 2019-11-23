@@ -28,9 +28,6 @@
     <Filter Include="Source Files\Memory">
       <UniqueIdentifier>{7641892e-8e69-494c-9219-50cc85e2c7fc}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Memory\Mappers">
-      <UniqueIdentifier>{502d9b09-c705-4ec3-8f37-de166946ccac}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Headers">
       <UniqueIdentifier>{0c5f1205-e894-4a5d-ac8a-0eb7992ca248}</UniqueIdentifier>
     </Filter>
@@ -93,11 +90,8 @@
     <ClCompile Include="glad.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MMC3.cpp">
-      <Filter>Source Files\Memory\Mappers</Filter>
-    </ClCompile>
     <ClCompile Include="BaseMapper.cpp">
-      <Filter>Source Files\Memory\Mappers</Filter>
+      <Filter>Source Files\Memory</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -53,9 +53,9 @@ std::unique_ptr<BaseMapper> BaseMapper::getMapper(iNESHeader header) {
 	case 0x03:
 		return std::make_unique<CNROM>(header);
 		break;
-	/*case 0x04:
+	case 0x04:
 		return std::make_unique<MMC3>(header);
-		break;*/
+		break;
 	default:
 		throw std::runtime_error("Mapper " + std::to_string(header.mapperID) + " is not supported!");
 		break;
