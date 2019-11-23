@@ -84,8 +84,19 @@ void BaseMapper::setPRGMapping(std::initializer_list<int> banks) {
 	this->PRGBankSize = 0x8000 / banks.size();
 	this->numPRGBanks = this->header.prgRomSize * 0x4000 / this->PRGBankSize;
 
-	int i = 0;
-	for(const int& bank : banks) this->setPRGBank(i++, bank);
+	if(this->prevPRGBanks.size() == banks.size()) {
+		int i = 0;
+		for(const int& bank : banks) {
+			if(this->prevPRGBanks[i] != bank) this->setPRGBank(i, bank);
+			i++;
+		}
+	} else {
+		int i = 0;
+		for(const int& bank : banks) this->setPRGBank(i++, bank);
+	}
+
+	this->prevPRGBanks.clear();
+	this->prevPRGBanks.insert(this->prevPRGBanks.begin(), banks);
 }
 
 void BaseMapper::setCHRMapping(std::initializer_list<int> banks) {
@@ -93,8 +104,19 @@ void BaseMapper::setCHRMapping(std::initializer_list<int> banks) {
 	this->CHRBankSize = 0x2000 / banks.size();
 	this->numCHRBanks = this->header.chrRomSize * 0x2000 / this->CHRBankSize;
 
-	int i = 0;
-	for(const int& bank : banks) this->setCHRBank(i++, bank);
+	if(this->prevCHRBanks.size() == banks.size()) {
+		int i = 0;
+		for(const int& bank : banks) {
+			if(this->prevCHRBanks[i] != bank) this->setCHRBank(i, bank);
+			i++;
+		}
+	} else {
+		int i = 0;
+		for(const int& bank : banks) this->setCHRBank(i++, bank);
+	}
+
+	this->prevCHRBanks.clear();
+	this->prevCHRBanks.insert(this->prevCHRBanks.begin(), banks);
 }
 
 

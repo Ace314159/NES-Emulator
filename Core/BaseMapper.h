@@ -24,6 +24,8 @@ public:
 	int CHRBankSize;
 	int numPRGBanks;
 	int numCHRBanks;
+	std::vector<int> prevPRGBanks;
+	std::vector<int> prevCHRBanks;
 	// RAM
 	std::array<MemoryHandler*, 0x10000> RAMHandlers;
 	std::array<uint8_t, 0x2000> WRAM; // CPU 0x6000 - 0x7FFF
