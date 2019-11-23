@@ -19,19 +19,16 @@ void NES::loadRom(const fs::path& romFilePath) {
 	}
 
 	std::array<uint8_t, 16> headerData;
-	romData.read(reinterpret_cast<uint8_t*>(&headerData), 16);
+	romData.read(headerData.data(), 16);
 	iNESHeader header;
 	header.init(headerData);
-	romData.seekg(512 * header.containsTrainer, std::ios::cur);
+	if(header.containsTrainer) romData.seekg(512, std::ios::cur);
 
 	// Initialize mapper
-#ifdef _DEBUG
-	// cout << "Using Mapper " << (int)header.mapperID << endl;
-#endif
 	this->mem.mapper = BaseMapper::getMapper(header);
 
-	romData.read(this->mem.mapper->PRG.data(), header.prgRomSize * 0x4000); // PRG
-	romData.read(this->mem.mapper->CHR.data(), header.chrRomSize * 0x2000); // CHR
+	romData.read(this->mem.mapper->PRG.data(), 0x4000 * header.prgRomSize); // PRG
+	romData.read(this->mem.mapper->CHR.data(), 0x2000 * header.chrRomSize); // CHR
 
 	this->mem.setMemoryHandlers();
 

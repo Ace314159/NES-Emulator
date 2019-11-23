@@ -2,9 +2,9 @@
 #include "iNESHeader.h"
 
 
-void iNESHeader::init(std::array<uint8_t, 16>& headerData) {
+void iNESHeader::init(const std::array<uint8_t, 16>& headerData) {
 	// Move everything from headerData into struct
-	this->NES = &headerData[0];
+	const uint8_t* NES = &headerData[0];
 	this->prgRomSize = headerData[4];
 	this->chrRomSize = headerData[5];
 	this->flag6 = headerData[6];
@@ -12,9 +12,9 @@ void iNESHeader::init(std::array<uint8_t, 16>& headerData) {
 	this->prgRamSize = headerData[8];
 	this->flag9 = headerData[9];
 	this->flag10 = headerData[10];
-	this->z = &headerData[11];
+	const uint8_t* z = &headerData[11];
 	// Verify if ROM is valid
-	if(!!memcmp(this->NES, "\x4E\x45\x53\x1A", 4) || !!memcmp(this->z, "\x0\x0\x0\x0\x0", 5)) {
+	if(!!memcmp(NES, "\x4E\x45\x53\x1A", 4) || !!memcmp(z, "\x0\x0\x0\x0\x0", 5)) {
 #ifdef _DEBUG
 		std::cout << "NES is " << this->NES << std::endl;
 		std::cout << "0 is ";
@@ -23,9 +23,6 @@ void iNESHeader::init(std::array<uint8_t, 16>& headerData) {
 #endif
 		throw std::runtime_error("Corrupted ROM!");
 	}
-	// Clear dangling pointers
-	this->NES = nullptr;
-	this->z = nullptr;
 
 	bool fourScreenVRAM = this->flag6 & 0x08;
 	bool isVerticalMirroring = this->flag6 & 0x01;

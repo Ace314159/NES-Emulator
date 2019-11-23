@@ -47,10 +47,10 @@ std::unique_ptr<BaseMapper> BaseMapper::getMapper(iNESHeader header) {
 	case 0x01:
 		return std::make_unique<MMC1>(header);
 		break;
-	/*case 0x02:
+	case 0x02:
 		return std::make_unique<UxROM>(header);
 		break;
-	case 0x03:
+	/*case 0x03:
 		return std::make_unique<CNROM>(header);
 		break;
 	case 0x04:
