@@ -61,9 +61,14 @@ void CPU::clocked() {
 
 	this->mem.mapper->CPUcycleCount++;
 
-	this->mem.ppu.emulateDot();
-	this->mem.ppu.emulateDot();
-	this->mem.ppu.emulateDot();
+	this->mem.ppu.actualCycleNum += 3;
+	if(this->mem.ppu.actualCycleNum > 340) {
+		this->mem.ppu.actualCycleNum -= 340;
+		this->mem.ppu.actualScanlineNum = ((this->mem.ppu.actualScanlineNum + 1 + 1) % (261 + 1)) - 1;
+	}
+	if(this->mem.ppu.actualScanlineNum == 240 && this->mem.ppu.actualCycleNum <= 3 ||
+		this->mem.ppu.actualScanlineNum == 241 && this->mem.ppu.actualCycleNum <= 3)
+		this->mem.ppu.catchUp();
 
 	this->mem.apu.emulateCycle();
 

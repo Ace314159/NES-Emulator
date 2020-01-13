@@ -7,6 +7,8 @@
 PPU::PPU(Memory& m) : mem(m) { }
 
 uint8_t PPU::read(uint16_t addr) {
+	this->catchUp();
+
 	addr &= 0xE007;
 	uint8_t returnVal;
 	switch(addr) {
@@ -45,6 +47,8 @@ uint8_t PPU::read(uint16_t addr) {
 }
 
 void PPU::write(uint16_t addr, uint8_t data) {
+	this->catchUp();
+
 	if(addr != 0x4014) {
 		addr &= 0xE007;
 		this->cpuPpuBus = data;
@@ -183,6 +187,10 @@ void PPU::emulateDot() {
 	// Jump from (339, -1) to (0, 0), skipping (340, -1) when rendering BG
 	if(this->scanlineNum == -1 && this->cycleNum == 338 && this->isRenderingBG())
 		this->cycleNum += this->oddFrame;
+}
+
+void PPU::catchUp() {
+	while(this->actualScanlineNum != this->scanlineNum || this->actualCycleNum != this->cycleNum) this->emulateDot();
 }
 
 

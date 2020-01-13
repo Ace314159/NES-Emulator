@@ -69,9 +69,14 @@ public:
 	uint8_t cpuPpuBus;
 	uint8_t DATAReadBuffer;
 
+	// Catch Up Variables
+	int actualScanlineNum = scanlineNum;
+	int actualCycleNum = cycleNum;
+
 	virtual uint8_t read(uint16_t addr) override;
 	virtual void write(uint16_t addr, uint8_t data) override;
 	void emulateDot();
+	void catchUp();
 
 	// Useful Functions
 	bool isRenderingBG();

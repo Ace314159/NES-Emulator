@@ -8,7 +8,7 @@ int main(int argc, char* argv[]) {
 	// cout << std::hex;
 
 	try {
-		auto nes = std::make_unique<NES>("Legend of Zelda, The (U) (PRG1) [!].nes");
+		auto nes = std::make_unique<NES>("ppu_vbl_nmi - Passed/01-vbl_basics.nes");
 
 		HRSRC paletteResource = ::FindResource(nullptr, MAKEINTRESOURCE(IDR_NTSCPALETTE), L"PALETTE");
 		HGLOBAL paletteResourceData = ::LoadResource(nullptr, paletteResource);
