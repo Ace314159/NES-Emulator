@@ -31,6 +31,7 @@ void Test::makeTest() {
 }
 
 void Test::passed() {
+	glDebugMessageCallback(glDebugCallbackTest, &this->nes);
 	fs::path failFile = this->nes.framesFolder / "FAIL";
 
 	if(fs::exists(failFile)) {

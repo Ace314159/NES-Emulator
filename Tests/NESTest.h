@@ -1,12 +1,12 @@
 #pragma once
 
-
 #include "NES.h"
 
 class NESTest : public NES {
 public:
 	NESTest(const fs::path& testFilePath);
 	void tick();
+	mutable int dumpNum = -1;
 
 
 	unsigned long long cycleNum = 0;

@@ -13,11 +13,10 @@ void ScreenTest::passed() {
 	});
 	std::array<Color, Window::width * Window::height> screenTexPixels;
 	for(auto filePath : filePaths) {
-		unsigned long long cycleNum = std::stoull(filePath.stem().string());
-		while(this->nes.cycleNum < cycleNum) {
+		int dumpNum = std::stoul(filePath.stem().string());
+		while(this->nes.dumpNum < dumpNum) {
 			this->nes.tick();
 		}
-		assert(this->nes.cycleNum == cycleNum);
 
 		std::basic_ifstream<GLubyte> file(filePath, std::ios::binary);
 		file.seekg(this->nes.screenDumpHeader.size());

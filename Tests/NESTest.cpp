@@ -16,15 +16,17 @@ NESTest::NESTest(const fs::path& testFilePath) : NES(testFilePath) {
 }
 
 void NESTest::dumpScreen() const {
-	assert(this->ppu.scanlineNum == 241 && this->ppu.cycleNum == 1);
 	if(this->prevScreenTexPixels == this->ppu.window.screenTexPixels) return;
-	fs::path filePath = this->framesFolder / (std::to_string(this->cycleNum) + ".ppm");
+	this->dumpNum++;
+#ifdef MAKE_TESTS
+	fs::path filePath = this->framesFolder / (std::to_string(this->dumpNum) + ".ppm");
 	std::ofstream file(filePath, std::ios::binary);
 
 
 	file << this->screenDumpHeader;
 	std::copy(this->ppu.window.screenTexPixels.begin(), this->ppu.window.screenTexPixels.end(),
 		std::ostream_iterator<Color>(file));
+#endif
 	NESTest::prevScreenTexPixels = this->ppu.window.screenTexPixels;
 }
 

@@ -5,9 +5,11 @@
 using std::cout;
 using std::endl;
 
+#define TESTS
+
 Window::Window() {
 	// Init GLFW
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(TESTS)
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -29,7 +31,7 @@ Window::Window() {
 	if(!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
 		throw std::runtime_error("Failed to initialize GLAD");
 	}
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(TESTS)
 	glEnable(GL_DEBUG_OUTPUT);
 	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 	glDebugMessageCallback(glDebugCallback, nullptr);
@@ -82,7 +84,7 @@ void Window::renderScreen() {
 	glBlitFramebuffer(0, 0, width, height, texX, texY, windowWidth - texX, windowHeight - texY,
 		GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-#ifndef _DEBUG
+#if !defined(_DEBUG) && !defined(TESTS)
 	// Wait to ensure correct framerate - TODO: Use faster method
 	//while(std::chrono::high_resolution_clock::now() < this->prevFrameTime + NTSC_FRAME_PERIOD);
 	this->prevFrameTime = std::chrono::high_resolution_clock::now();
@@ -91,7 +93,7 @@ void Window::renderScreen() {
 	glfwSwapBuffers(window);
 	glfwPollEvents();
 	// Send notification for tests
-#ifdef _DEBUG
+#ifdef TESTS
 	glDebugMessageInsert(GL_DEBUG_SOURCE_APPLICATION, GL_DEBUG_TYPE_OTHER, 0xABC,
 		GL_DEBUG_SEVERITY_NOTIFICATION, -1, "Screen Rendered!");
 #endif
