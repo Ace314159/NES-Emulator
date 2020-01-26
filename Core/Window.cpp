@@ -5,8 +5,6 @@
 using std::cout;
 using std::endl;
 
-#define TESTS
-
 Window::Window() {
 	// Init GLFW
 #if defined(_DEBUG) || defined(TESTS)
