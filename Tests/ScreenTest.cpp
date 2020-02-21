@@ -19,7 +19,9 @@ void ScreenTest::passed() {
 		}
 
 		std::basic_ifstream<GLubyte> file(filePath, std::ios::binary);
-		file.seekg(this->nes.screenDumpHeader.size());
+		file.ignore(std::numeric_limits<std::streamsize>::max());
+		file.clear();
+		file.seekg(file.gcount() - screenTexPixels.size() * 3, std::ios::beg);
 		file.read(reinterpret_cast<GLubyte*>(screenTexPixels.data()), screenTexPixels.size() * 3);
 		if(this->nes.ppu.window.screenTexPixels != screenTexPixels) {
 			throw std::runtime_error("Test Failed!");
